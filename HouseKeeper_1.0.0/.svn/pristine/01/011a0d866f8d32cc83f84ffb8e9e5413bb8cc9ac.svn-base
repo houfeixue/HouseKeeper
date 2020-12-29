@@ -1,0 +1,79 @@
+//
+//  LKWorkRecordPlaceholderView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/8/3.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKWorkRecordPlaceholderView.h"
+
+@interface LKWorkRecordPlaceholderView()
+@property (nonatomic, strong) UIImageView *iconImageView;
+@property (nonatomic, strong) UILabel *tipLabel;
+@property (nonatomic, strong) UIButton *writeRecordBtn;
+@end
+
+@implementation LKWorkRecordPlaceholderView
+
+- (void)createUI {
+    [super createUI];
+    self.backgroundColor = [ColorUtil colorWithHex:@"#F5F5F5"];
+    [self addSubview:self.iconImageView];
+    [self addSubview:self.tipLabel];
+    [self addSubview:self.writeRecordBtn];
+    [self.iconImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.equalTo(self.mas_centerX);
+        make.top.mas_equalTo(60);
+        make.width.mas_equalTo(80);
+        make.height.mas_equalTo(78);
+    }];
+    [self.tipLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.iconImageView.mas_bottom).offset(10);
+        make.left.right.equalTo(self);
+    }];
+    [self.writeRecordBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.tipLabel.mas_bottom).offset(30);
+        make.centerX.equalTo(self.mas_centerX);
+        make.height.mas_equalTo(44);
+        make.width.mas_equalTo(200);
+        make.bottom.equalTo(self.mas_bottom).inset(45);
+    }];
+    [self layoutIfNeeded];
+    [self.writeRecordBtn.layer setCornerRadius:20];
+    [self.layer setCornerRadius:6];
+}
+- (void)addWorkRecordBtnClick {
+    if (self.addWorkRecord != nil) {
+        self.addWorkRecord();
+    }
+}
+- (UIImageView *)iconImageView {
+    if (_iconImageView == nil) {
+        _iconImageView = [[UIImageView alloc] init];
+        _iconImageView.image = [UIImage imageNamed:@"notes_icon_no record"];
+    }
+    return _iconImageView;
+}
+- (UILabel *)tipLabel {
+    if (_tipLabel == nil) {
+        _tipLabel = [[UILabel alloc] init];
+        _tipLabel.textColor = LKLightGrayColor;
+        _tipLabel.font = LK_12font;
+        _tipLabel.text = @"当天没有写工作记录哦";
+        _tipLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    return _tipLabel;
+}
+- (UIButton *)writeRecordBtn {
+    if (_writeRecordBtn == nil) {
+        _writeRecordBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_writeRecordBtn setTitle:@"立即写记录" forState:UIControlStateNormal];
+        [_writeRecordBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        _writeRecordBtn.backgroundColor = LKLightRedColor;
+        _writeRecordBtn.titleLabel.font = LK_14font;
+        [_writeRecordBtn addTarget:self action:@selector(addWorkRecordBtnClick) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _writeRecordBtn;
+}
+@end

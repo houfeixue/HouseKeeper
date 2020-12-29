@@ -1,0 +1,39 @@
+//
+//  LKWorkRecordListModel.h
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@class LKWorkRecordPictureModel;
+
+@interface LKWorkRecordListModel : NSObject
+/** 创建时间 */
+@property (nonatomic, assign)long long createTime;
+/** 工作描述 */
+@property (nonatomic, copy) NSString *workDesc;
+/** 用户id */
+@property (nonatomic, assign) int managerId;
+/** 用户身份 1保安 2保洁 3消防 4其他 */
+@property (nonatomic, assign) int workItemId;
+/** 用户类型 */
+@property (nonatomic, assign) int workType;
+/** 地点 */
+@property (nonatomic, copy) NSString *workPosition;
+
+@property (nonatomic, strong) NSArray<LKWorkRecordPictureModel *> *urls;
+
+@property (nonatomic, assign) BOOL isFirst;
+
+@end
+
+
+@interface LKWorkRecordPictureModel : NSObject
+@property (nonatomic, copy) NSString *url;
+@property (nonatomic, copy) NSString *desc;
+
+@end
+

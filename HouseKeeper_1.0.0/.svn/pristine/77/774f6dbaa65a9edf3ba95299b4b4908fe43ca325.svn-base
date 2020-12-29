@@ -1,0 +1,21 @@
+//
+//  LKAddWorkRecordViewModel.h
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/31.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKRequestViewModel.h"
+
+@interface LKAddWorkRecordViewModel : LKRequestViewModel
+@property (nonatomic, strong) RACSubject *addWorkRecordSubject;
+@property (nonatomic, strong) RACSubject *deleteWorkRecordSubject;
+@property (nonatomic, strong) RACSubject *updateWorkRecordSubject;
+
+@property (nonatomic, assign) BOOL saveWorkRecordBtnEnable;
+
+@property (nonatomic, strong) NSString *requestUrl;//请求接口地址
+@property (nonatomic, strong) NSDictionary *requestDict;//请求接口参数
+
+@end

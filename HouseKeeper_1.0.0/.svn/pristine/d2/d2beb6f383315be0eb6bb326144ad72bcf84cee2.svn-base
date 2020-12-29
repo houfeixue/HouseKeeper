@@ -1,0 +1,187 @@
+//
+//  LKQualityHistoryViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityReportViewModel.h"
+#import "LKQualityReportViewCell.h"
+#import "LKQualityListSectionHeaderView.h"
+#import "LKQualityHistoryModel.h"
+
+@implementation LKQualityReportViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setUp];
+        [self requestData];
+    }
+    return self;
+}
+
+-(void)setUp{
+    
+    
+    @weakify(self)
+    [[RACObserve(self,requestDict)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        NSLog(@"RACObserve 请求接口 url:%@ :  %@",self.requestUrl,requestDict);
+        
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Get withTag:1];
+        
+    }];
+    
+    //    //cell的点击
+    //    [self.tableDidSelectSubject subscribeNext:^(NSIndexPath * index) {
+    //        NSInteger  d = index.row;
+    //        NSLog(@"tableDidSelectSubject : %d ",d);
+    //    }];
+    
+    
+    
+    
+    
+    
+    
+}
+
+-(void)requestData{
+    
+    @weakify(self)
+    
+    [self.requestViewModelOKSubject subscribeNext:^(NSString *  requestJson) {
+        NSLog(@"请求接口完成%@-%@ : %@",self.requestUrl,self.requestDict,requestJson);
+        
+        @strongify(self);
+        
+        LKTableSectionObject * section = nil;
+        if (self.dataArray!=nil&&self.dataArray.count>0) {
+            section = [self.dataArray objectAtIndex:0];
+        }else{
+            section = [[LKTableSectionObject alloc]init];
+        }
+        if (self.pageIndex == 1) {
+            [section.itemArray removeAllObjects];
+        }
+        //todo 处理数据
+        
+        for (int i=0; i<5; i++) {
+            LKQualityHistoryModel * model = [[LKQualityHistoryModel alloc]init];
+            //            model.name = @"123";
+            
+            [section.itemArray addObject:model];
+        }
+        
+        
+        [self.dataArray removeAllObjects];
+        [self.dataArray addObject:section];
+        //总数
+        //        NSNumber *rowCount = [data numberForKey:@"total"];
+        
+        NSNumber *rowCount = @(10);
+        if (section.itemArray.count>=[rowCount integerValue]) {
+            [self.refreshEndSubject sendNext:@(FooterRefresh_HasNoMoreData)];
+            
+        }else{
+            [self.refreshEndSubject sendNext:@(FooterRefresh_HasMoreData)];
+            
+        }
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSError * x) {
+        NSLog(@"%@",x.localizedDescription);
+    }];
+    
+}
+
+
+
+#pragma mark table -delegate
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:section];
+    return sectionObject.itemArray.count;
+    
+    
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    UILabel *label = [[UILabel alloc] init];
+    label.frame = CGRectMake(12, 74, 63, 13);
+    label.text = @"2018年6月";
+    label.font = [UIFont fontWithName:@"PingFangSC-Regular" size:13];
+    label.textColor = [UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0];
+    label.backgroundColor = LKF7Color;
+    
+    return label;
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return 30;
+}
+
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    NSString* cellIdentifier = [NSString stringWithFormat:@"%@", @"LKQualityReportViewCell"];
+    LKQualityReportViewCell * cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier forIndexPath:indexPath];
+    LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:indexPath.section];
+    [cell conFigCellwithData:[sectionObject.itemArray objectAtIndex:indexPath.row] atIndex:indexPath];
+    WS(weakSelf)
+//    cell.qualityHistoryCellClick = ^(NSString *status) {
+//        
+//        if ([status isEqualToString:@"detail"]) {
+//            
+//            //明细
+//            
+//            NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+//            
+//            [dict setObject:@"detail" forKey:@"key"];
+//            [dict setObject:[sectionObject.itemArray objectAtIndex:indexPath.row] forKey:@"data"];
+//            
+//            [weakSelf.cellClickSubject sendNext:dict];
+//            
+//            
+//        }else if ([status isEqualToString:@"look"]){
+//            //报告
+//            
+//            [weakSelf.cellClickSubject sendNext:[sectionObject.itemArray objectAtIndex:indexPath.row]];
+//            
+//            
+//        }
+//        
+//        
+//    };
+    
+    
+    return cell;
+    
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    LKTableSectionObject * section = [self.dataArray objectAtIndex:indexPath.section];
+    id model = [section.itemArray objectAtIndex:indexPath.row];
+    
+    [self.cellClickSubject sendNext:model];
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:indexPath.section];
+    return [tableView fd_heightForCellWithIdentifier:@"LKQualityReportViewCell" configuration:^(LKQualityReportViewCell *cell) {
+        
+        [cell conFigCellwithData:[sectionObject.itemArray objectAtIndex:indexPath.row] atIndex:indexPath];
+        
+    }];
+    
+    
+}
+
+@end

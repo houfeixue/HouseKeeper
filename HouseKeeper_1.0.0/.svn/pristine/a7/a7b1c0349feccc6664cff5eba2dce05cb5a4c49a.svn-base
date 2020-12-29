@@ -1,0 +1,120 @@
+//
+//  LKWorkRecordVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/16.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKWorkRecordVC.h"
+#import "LKCalendarView.h"
+#import "LKWorkRecordTitleView.h"
+#import "LKWorkRecordViewModel.h"
+
+@interface LKWorkRecordVC()
+@property (nonatomic, strong) LKCalendarView *calendarView;
+@property (nonatomic, strong) LKWorkRecordTitleView *titleView;
+@property (nonatomic, strong) NSDate *currentSelectDate;
+@end
+
+@implementation LKWorkRecordVC
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    UIButton *rightBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    rightBtn.backgroundColor = [UIColor redColor];
+    rightBtn.frame = CGRectMake(0, 0, 44, 44);
+    [rightBtn addTarget:self action:@selector(rightBtnClick) forControlEvents:UIControlEventTouchUpInside];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:rightBtn];
+    
+    // Do any additional setup after loading the view, typically from a nib.
+    UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+    btn.frame = CGRectMake(100, 100, 200, 50);
+    btn.backgroundColor = [UIColor redColor];
+    [btn setTitle:@"日历" forState:UIControlStateNormal];
+    [self.view addSubview:btn];
+    @weakify(self)
+    [[btn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self)
+        [self showCalendarView];
+        //        [Dialog showScoreAlertViewWithMessage:@"检查标准：设备未按要求开通扣1分，完好率不足扣1分，管理人员脱岗或对设备信息不了解扣1分" placeholderString:@"参考分1分" score:4 dismissHandler:^(NSInteger index, LKInputAlertView *alertView) {
+        //            if (index == 1) {
+        //
+        //            }else {
+        //                [alertView close];
+        //            }
+        //        }];
+        
+
+        
+    }];
+    [self createNavTitleView];
+    [self createCalendarView];
+
+}
+- (void)createNavTitleView {
+    [self addTitleViewWithTitle:self.titleView];
+    self.titleView.currentSelectDate = [NSDate date];
+    @weakify(self);
+    self.titleView.selectDate = ^(NSDate *selectDate) {
+        @strongify(self);
+        DLog(@"%@",[self.calendarView.dateFormatter stringFromDate:selectDate]);
+        self.currentSelectDate = selectDate;
+    };
+}
+- (void)createCalendarView {
+    [self.view addSubview:self.calendarView];
+    [self.view bringSubviewToFront:self.calendarView];
+    @weakify(self);
+    self.calendarView.selectDate = ^(NSDate *selectedDate) {
+        @strongify(self);
+        DLog(@"%@",[self.calendarView.dateFormatter stringFromDate:selectedDate]);
+        self.currentSelectDate = selectedDate;
+        self.titleView.currentSelectDate = selectedDate;
+        [self hiddenCalendarView];
+    };
+}
+- (void)rightBtnClick {
+    [self showCalendarView];
+}
+#pragma mark - LKCalendar
+- (void)hiddenCalendarView {
+    [UIView animateWithDuration:1 animations:^{
+        self.calendarView.frame = CGRectMake(0, -kScreen_Height + kStatusBarHeight + kNavBarHeight, kScreen_Width,  kScreen_Height - kStatusBarHeight - kNavBarHeight);
+    } completion:^(BOOL finished) {
+        self.calendarView.hidden = YES;
+    }];
+}
+- (void)showCalendarView {
+    [self.calendarView.calendar selectDate:self.currentSelectDate scrollToDate:YES];
+    [UIView animateWithDuration:1 animations:^{
+        self.calendarView.frame = CGRectMake(0,0, kScreen_Width, kScreen_Height - kStatusBarHeight - kNavBarHeight);
+        self.calendarView.hidden = NO;
+    } completion:^(BOOL finished) {
+    }];
+}
+
+
+- (Class)tableCellClass {
+    return [LKWorkRecordCell class];
+}
+- (Class)dataSourceClass {
+    return [LKWorkRecordViewModel class];
+}
+#pragma mark - lazy
+- (LKCalendarView *)calendarView {
+    if (_calendarView == nil) {
+        _calendarView = [[LKCalendarView alloc] init];
+        _calendarView.frame = CGRectMake(0, -kScreen_Height + kStatusBarHeight + kNavBarHeight, kScreen_Width,  kScreen_Height - kStatusBarHeight - kNavBarHeight);
+        _calendarView.hidden = YES;
+    }
+    return _calendarView;
+}
+- (LKWorkRecordTitleView *)titleView {
+    if (_titleView == nil) {
+        _titleView = [[LKWorkRecordTitleView alloc] init];
+    }
+    return _titleView;
+}
+@end

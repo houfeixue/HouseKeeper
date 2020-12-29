@@ -1,0 +1,106 @@
+//
+//  LKPictureCliassifyView.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/19.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPictureCliassifyView.h"
+
+@implementation LKPictureCliassifyView
+
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+-(instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self _setUpView];
+    }
+    return self;
+}
+
+-(void)_setUpView
+{
+    [self addSubview:self.classifyBtn];
+    [self addSubview:self.uploadBtn];
+    
+    [self.uploadBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(self);
+        make.right.equalTo(self).offset(LKRightMargin);
+        make.height.equalTo(@(30));
+        make.width.equalTo(@(60));
+        
+    }];
+    [self.classifyBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(self);
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.width.equalTo(@(120));
+        make.height.equalTo(@(30));
+        
+    }];
+}
+
+
+
+-(UILabel *)classifyBtn
+{
+    if (_classifyBtn == nil) {
+        _classifyBtn = [[UILabel alloc]init];
+//        _classifyBtn.text = @"默认";
+        _classifyBtn.font = LK_16font;
+        _classifyBtn.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+        _classifyBtn.userInteractionEnabled = YES;
+        UITapGestureRecognizer * tap = [[UITapGestureRecognizer alloc]init];
+        [_classifyBtn addGestureRecognizer:tap];
+        
+        _classifyBtn.attributedText = [NSString getAttributeStringWithimage:[UIImage imageNamed:@"check_icon_tab"] imageBounds:CGRectMake(0, 0, 10, 10) withLabelText:@"默认  " font:LK_16font textColor:[UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0] withHeader:NO];
+        
+        @weakify(self)
+        [[tap rac_gestureSignal] subscribeNext:^(id x) {
+            @strongify(self);
+            if (self.pictureClassifyClick) {
+                self.pictureClassifyClick(@"pictureClassify");
+            }
+        }];
+
+    }
+    
+    return _classifyBtn;
+}
+
+-(UIButton *)uploadBtn
+{
+    if (_uploadBtn == nil) {
+        _uploadBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_uploadBtn setTitle:@"确定" forState:UIControlStateNormal];
+        [_uploadBtn setTitleColor: [UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1/1.0] forState:UIControlStateNormal];
+        _uploadBtn.backgroundColor = [UIColor colorWithRed:66/255.0 green:65/255.0 blue:82/255.0 alpha:1/1.0];
+        [_uploadBtn hyb_addCornerRadius:5];
+        _uploadBtn.titleLabel.font = LK_12font;
+        @weakify(self)
+        [[_uploadBtn rac_signalForControlEvents:UIControlEventTouchUpInside]subscribeNext:^(id x) {
+            @strongify(self);
+            if (self.pictureClassifyClick) {
+                self.pictureClassifyClick(@"upload");
+            }
+        }];
+
+    }
+    
+    return _uploadBtn;
+}
+-(void)conFigClassifyName:(NSString *)text
+{
+    text = [NSString stringWithFormat:@"%@  ",text];
+    _classifyBtn.attributedText = [NSString getAttributeStringWithimage:[UIImage imageNamed:@"check_icon_tab"] imageBounds:CGRectMake(0, 0, 10, 10) withLabelText:text font:LK_16font textColor:[UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0] withHeader:NO];
+    
+}
+@end

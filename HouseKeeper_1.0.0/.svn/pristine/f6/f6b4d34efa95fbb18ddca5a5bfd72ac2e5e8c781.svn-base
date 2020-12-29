@@ -1,0 +1,343 @@
+//
+//  LKQualityScoreDetailViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/20.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityScoreDetailViewController.h"
+#import "LKScoreDetailView.h"
+#import "LKLookPictureViewController.h"
+#import "LKAddPictureItemView.h"
+#import "LKCameraTool.h"
+#import "LKAddWorkDescriptionItemView.h"
+#import "LKAlumbsViewController.h"
+#import "LKSelectPicturesViewController.h"
+#import "SDPhotoBrowser.h"
+
+
+@interface LKQualityScoreDetailViewController ()<LKAddPictureItemViewDelegate,LKAddWorkDescriptionItemViewDelegate,LKSelectPicturesViewControllerDelegate,SDPhotoBrowserDelegate>
+{
+}
+@property(nonatomic,strong)UIScrollView * mainScroll;
+@property(nonatomic,strong)LKScoreDetailView * scoreBottomView;
+@property (nonatomic, strong) LKAddPictureItemView *pictureItemView;
+@property (nonatomic, strong) LKInputTextView * checkScoreView;
+@property(nonatomic,strong)  LKAddWorkDescriptionItemView * scoreDetailView;
+@property (nonatomic, strong) LKAddPictureItemView *pictureItem;
+//数据
+@property (nonatomic, assign) CGFloat pictureViewHeight;
+
+@property(nonatomic,strong) NSMutableArray * selectPictureArray;
+
+@end
+
+@implementation LKQualityScoreDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.pictureViewHeight = 150;
+    [self conFigUI];
+}
+
+-(void)conFigUI{
+    
+    [self setNavBarTitle:@"品质抽查"];
+    
+    [self.view addSubview:self.mainScroll];
+    [self.view addSubview:self.scoreBottomView];
+    [self.scoreBottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.view);
+        if (LK_IS_IOS_11) {
+            make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+        }else{
+            make.bottom.equalTo(self.view.mas_bottom);
+        }
+        make.height.equalTo(@(50));
+        
+    }];
+    
+    [self.mainScroll mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.equalTo(self.view);
+        make.bottom.equalTo(self.scoreBottomView.mas_top);
+
+    }];
+    
+    
+    UILabel * titleLabel = [[UILabel alloc]init];
+    titleLabel.font = LK_13font;
+    titleLabel.backgroundColor = LKF7Color;
+    titleLabel.textColor = [UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0];
+    [self.mainScroll addSubview:titleLabel];
+    [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.equalTo(@(30));
+        make.top.equalTo(self.mainScroll);
+        make.right.equalTo(self.view.mas_right);
+    }];
+    [titleLabel setHeadIndent:LKLeftMargin withEndIndent:LKRightMargin withText:@"标题（获取事项标题）"];
+    
+    UILabel * nameLabel = [[UILabel alloc]init];
+    nameLabel.numberOfLines = 0;
+    nameLabel.font = LK_15font;
+    nameLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    [self.mainScroll addSubview:nameLabel];
+    
+    [nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.mas_greaterThanOrEqualTo(60);
+        make.top.equalTo(titleLabel.mas_bottom);
+        make.width.equalTo(@(kScreen_Width));
+    }];
+    [nameLabel setHeadIndent:LKLeftMargin withEndIndent:LKRightMargin withText:@"项目物业服务中心公示物业管理中心架构照片"];
+    [nameLabel borderForColor:LKF7Color borderWidth:10 borderType:UIBorderSideTypeBottom];
+
+    
+    UILabel * standardLabel = [[UILabel alloc]init];
+    standardLabel.numberOfLines = 0;
+    standardLabel.text = @"无公示得0分；公示不全扣0.5分";
+    standardLabel.font = LK_15font;
+    standardLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    
+    [self.mainScroll addSubview:standardLabel];
+    [standardLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll).offset(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(50);
+        make.right.equalTo(self.mainScroll).offset(LKRightMargin);
+        make.top.equalTo(nameLabel.mas_bottom);
+    }];
+    [standardLabel borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+
+    LKInputTextView * scoreLabel = [[LKInputTextView alloc]init];
+//    scoreLabel.numberOfLines = 0;
+//    scoreLabel.text = @"1分";
+//    scoreLabel.font = LK_15font;
+//    scoreLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+     [scoreLabel bindDataWithText:@"参考分" TextFont:LK_14font TextColor:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] placeholder:@"" textFieldText:@"1分" textFieldCanEdit:NO isShowNextBtn:NO];
+    [self.mainScroll addSubview:scoreLabel];
+    [scoreLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll).offset(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(50);
+        make.right.equalTo(self.mainScroll).offset(LKRightMargin);
+        make.top.equalTo(standardLabel.mas_bottom);
+    }];
+    [scoreLabel borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+
+    _checkScoreView = [[LKInputTextView alloc]init];
+    [_checkScoreView bindDataWithText:@"检查得分" TextFont:LK_14font TextColor:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] placeholder:@"请输入检查结果得分" textFieldText:nil textFieldCanEdit:YES isShowNextBtn:NO];
+    [self.mainScroll addSubview:_checkScoreView];
+    [_checkScoreView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.equalTo(@(50));
+        make.width.equalTo(@(kScreen_Width));
+        make.top.equalTo(scoreLabel.mas_bottom);
+    }];
+    [_checkScoreView borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+
+     _scoreDetailView = [[LKAddWorkDescriptionItemView alloc]init];
+    _scoreDetailView.titleLabel.text = @"扣分描述";
+    _scoreDetailView.textView.wzb_placeholder = @"请输入检查点具体问题及评价";
+    _scoreDetailView.delegate = self;
+    [self.mainScroll addSubview:_scoreDetailView];
+    
+    [_scoreDetailView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.equalTo(@(50));
+        make.width.equalTo(@(kScreen_Width));
+        make.top.equalTo(self.checkScoreView.mas_bottom);
+    }];
+//    [_scoreDetailView borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+    
+    [self.mainScroll addSubview:self.pictureItem];
+    [self.pictureItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.scoreDetailView.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.pictureViewHeight);
+        make.bottom.equalTo(self.mainScroll.mas_bottom).inset(20);
+    }];
+    
+
+}
+
+
+
+//lazy
+-(UIScrollView *)mainScroll
+{
+    if (_mainScroll == nil) {
+        _mainScroll = [[UIScrollView alloc]init];
+        _mainScroll.backgroundColor = [UIColor whiteColor];
+    }
+    return _mainScroll;
+}
+- (LKAddPictureItemView *)pictureItem {
+    if (_pictureItem == nil) {
+        _pictureItem = [[LKAddPictureItemView alloc] init];
+        _pictureItem.delegate = self;
+    }
+    return _pictureItem;
+}
+
+-(LKScoreDetailView *)scoreBottomView
+{
+    if (_scoreBottomView == nil) {
+        _scoreBottomView = [[LKScoreDetailView alloc]init];
+        WS(weakSelf)
+        _scoreBottomView.scoreDetailClick = ^(NSString *status) {
+            if([status isEqualToString:@"next"]){
+                
+                
+                
+            }else if([status isEqualToString:@"save"]){
+                
+                
+            }
+        };
+    }
+    return _scoreBottomView;
+}
+- (LKAddPictureItemView *)pictureItemView {
+    if (_pictureItemView == nil) {
+        _pictureItemView = [[LKAddPictureItemView alloc] init];
+        _pictureItemView.delegate = self;
+    }
+    return _pictureItemView;
+}
+
+//上传图片
+
+-(void)savePicImage
+{
+    [LKHttpImageRequest uploadImageWithPath:LKUploadimg photos:@[] params:nil success:^(id Json) {
+        ;
+    } failure:^{
+        ;
+    }];
+    
+}
+
+
+//保存接口
+
+-(void)saveScore
+{
+    NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+
+    [dict setObject:self.listModel.detailId forKey:@"detailId"];
+    [dict setObject:self.listModel.checkRecordId forKey:@"checkRecordId"];
+    [dict setObject:self.checkScoreView.textField.text forKey:@"scort"];
+    
+    if (self.checkScoreView.textField.text.length==0) {
+        [LKCustomMethods showWindowMessage:@"请输入检查得分"];
+        return;
+    }
+    
+    [dict setObject:@"" forKey:@"parentId"];
+    [dict setObject:@"" forKey:@"ruleDesc"];
+    NSMutableArray * dataArray = [[NSMutableArray alloc]init];
+    
+    
+    for (LKPictureModel *model in self.pictureItem.pictureArray) {
+        NSMutableDictionary * picDict = [[NSMutableDictionary alloc]init];
+        
+        [picDict setObject:@"" forKey:@"masterId"];
+        [picDict setObject:@"" forKey:@"url"];
+        [picDict setObject:@"img" forKey:@"type"];
+        [picDict setObject:self.commityId forKey:@"residenceId"];
+        [picDict setObject:model.area forKey:@"position"];
+        [picDict setObject:model.des forKey:@"desc"];
+
+    }
+    
+    [dict setObject:dataArray forKey:@"attachMent"];
+
+    
+    [[LKHttpRequest request]POST:LKSpotCheckSubmit parameters:dict tag:0 success:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSString * _Nonnull responseString) {
+        
+        DLog(@"%@",responseString);
+    } failure:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSError * _Nonnull error) {
+        
+        DLog(@"%@",error.localizedDescription);
+
+    }];
+    
+}
+
+
+#pragma mark - workDesc
+- (void)LKAddWorkDescriptionItemViewDelegateViewHeight:(CGFloat)viewHeight {
+    [self.scoreDetailView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.checkScoreView.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(viewHeight);
+    }];
+    [self.pictureItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.scoreDetailView.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.pictureViewHeight);
+        make.bottom.equalTo(self.mainScroll.mas_bottom).inset(20);
+    }];
+}
+#pragma mark - pictViewDelegate
+- (void)LKAddPictureItemViewDelegateViewHeight:(CGFloat)pictureViewHeight {
+    [self.view endEditing:YES];
+    if (pictureViewHeight < 150) {
+        pictureViewHeight = 150;
+    }
+    self.pictureViewHeight = pictureViewHeight;
+    [self.pictureItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.scoreDetailView.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(pictureViewHeight);
+        make.bottom.equalTo(self.mainScroll.mas_bottom).inset(20);
+    }];
+    [self.mainScroll layoutIfNeeded];
+}
+
+/** 选择照片 */
+- (void)LKAddPictureItemViewDelegateSelectPictureIndex:(NSInteger)pictureIndex
+{
+    
+    DLog(@"工作相册");
+    
+    LKAlumbsViewController *lvc = [[LKAlumbsViewController alloc]init];
+    lvc.type = @"select";
+    lvc.selectCount = 9 - self.pictureItem.pictureArray.count;
+    lvc.formVC = self;
+    [self.navigationController pushViewController:lvc animated:YES];
+
+}
+- (void)LKAddPictureItemViewDelegatetureCheckBigPicture:(NSInteger)pictureIndex pictureView:(LKAddPictureView *)pictureView imageArray:(NSMutableArray *)imageArray {
+    self.selectPictureArray = imageArray;
+    SDPhotoBrowser *photoBrowser = [[SDPhotoBrowser alloc] init];
+    photoBrowser.sourceImagesContainerView = (UIView *)pictureView;
+    photoBrowser.imageCount = imageArray.count;
+    photoBrowser.currentImageIndex = pictureIndex;
+    photoBrowser.delegate = self;
+    [photoBrowser show];
+}
+
+#pragma mark - photoBrowser
+- (UIImage *)photoBrowser:(SDPhotoBrowser *)browser placeholderImageForIndex:(NSInteger)index {
+    return [self.selectPictureArray objectAtIndex:index];
+}
+
+#pragma mark - LKSelectPicturesViewControllerDelegate
+- (void)selectPicturesArray:(NSArray *)imageArray
+{
+    DLog(@"selectPicturesArray : %@",imageArray);
+    
+    for (LKPictureModel *model in imageArray) {
+        [self.pictureItem.pictureArray addObject:model];
+    }
+    [self.pictureItem reRefreshPictureView];
+    
+}
+
+@end

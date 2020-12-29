@@ -1,0 +1,76 @@
+//
+//  NSString+Extension.m
+//  rqbao
+//
+//  Created by sunny on 2018/1/17.
+//  Copyright © 2018年 sunny. All rights reserved.
+//
+
+#import "NSString+Extension.h"
+#import "YYText.h"
+
+@implementation NSString (Extension)
+- (NSURL *)toURL {
+    return [NSURL URLWithString:[self addPercentUTF8]];
+}
+- (NSString *)addPercentUTF8 {
+    NSString *percent = [self stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    NSString *replacePercent = [percent stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    return replacePercent;
+}
+- (NSString *)removeAllSapce {
+    return [self stringByReplacingOccurrencesOfString:@" " withString:@""];
+}
++ (NSMutableAttributedString *)getAttributeStringWithLabelText:(NSString *)labelText font:(UIFont *)font textColor:(UIColor *)textColor changeText:(NSString *)changeText changeFont:(UIFont *)changeFont changeColor:(UIColor *)changeColor {
+    NSMutableAttributedString *attribute = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",labelText,changeText]];
+    attribute.yy_font = font;
+    attribute.yy_color = textColor;
+    [attribute yy_setFont:changeFont range:NSMakeRange(labelText.length, changeText.length)];
+    [attribute yy_setColor:changeColor range:NSMakeRange(labelText.length, changeText.length)];
+    return attribute;
+}
+
+/** image + labelText == 返回的字符串  */
+
+
++ (NSMutableAttributedString *)getAttributeStringWithimage:(UIImage *)image imageBounds:(CGRect)frame withLabelText:(NSString *)labelText font:(UIFont *)font textColor:(UIColor *)textColor withHeader:(BOOL)header{
+    
+    
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:labelText];
+    [string addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, labelText.length)];
+    [string addAttribute:NSForegroundColorAttributeName value:textColor range:NSMakeRange(0, string.length)];
+    
+    NSTextAttachment *attach = [[NSTextAttachment alloc] init];
+    attach.image = image;
+    attach.bounds = frame;
+    NSAttributedString *attachString = [NSAttributedString attributedStringWithAttachment:attach];
+    
+    
+    //将图片插入到合适的位置
+    if (header) {
+        [string insertAttributedString:attachString atIndex:0];
+
+    }else{
+        [string insertAttributedString:attachString atIndex: string.length];
+
+    }
+    
+    return string;
+}
+
++ (NSMutableAttributedString *)getAttributeStringWithimage:(UIImage *)image imageBounds:(CGRect)frame withLabelText:(NSString *)labelText font:(UIFont *)font textColor:(UIColor *)textColor
+{
+   return  [NSString getAttributeStringWithimage:image imageBounds:frame withLabelText:labelText font:font textColor:textColor withHeader:YES];
+}
+
+- (BOOL)judgePasswordLegal{
+    BOOL result = false;
+    if (self.length >= 6  && self.length <= 16){
+        // 判断长度大于8位后再接着判断是否同时包含数字和字符
+        NSString * regex = @"^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,16}$";
+        NSPredicate *pred = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", regex];
+        result = [pred evaluateWithObject:self];
+    }
+    return result;
+}
+@end

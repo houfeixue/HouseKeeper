@@ -1,0 +1,34 @@
+//
+//  LKAddWorkDescriptionItemView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddWorkDescriptionItemView.h"
+#import "UITextView+WZB.h"
+
+@interface LKAddWorkDescriptionItemView ()
+@property (nonatomic, strong) UILabel *titleLabel;
+@property (nonatomic, strong) UITextView *textView;
+
+@end
+
+@implementation LKAddWorkDescriptionItemView
+
+- (void)createUI {
+    [super createUI];
+}
+
+#pragma mark - lazy
+- (UILabel *)titleLabel {
+    if (_titleLabel == nil) {
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.font = LK_14font;
+        _titleLabel.textColor = LKLightGrayColor;
+        _titleLabel.text = @"工作照片";
+    }
+    return _titleLabel;
+}
+@end

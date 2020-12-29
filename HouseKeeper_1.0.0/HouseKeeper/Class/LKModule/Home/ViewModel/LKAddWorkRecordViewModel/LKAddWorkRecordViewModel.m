@@ -1,0 +1,88 @@
+//
+//  LKAddWorkRecordViewModel.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/31.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddWorkRecordViewModel.h"
+
+@implementation LKAddWorkRecordViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _saveWorkRecordBtnEnable = YES;
+        [self requestData];
+        [self setUp];
+    }
+    return self;
+}
+- (void)setUp{
+    @weakify(self);
+    [[RACObserve(self, requestDict) ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self);
+        if (self.requestTag == 1) {
+            self.saveWorkRecordBtnEnable = NO;
+        }
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+    }];
+}
+- (void)requestData {
+    @weakify(self);
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray *errorArray) {
+        @strongify(self);
+        self.saveWorkRecordBtnEnable = YES;
+        NSError *error = [errorArray objectAtIndex:1];
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }];
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *resultArray) {
+        @strongify(self);
+        self.saveWorkRecordBtnEnable = YES;
+        NSNumber *tag = [resultArray objectAtIndex:0];
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:[resultArray objectAtIndex:1]];
+        int successResult = [[requestJson numberForKey:@"status"] intValue];
+        if ( successResult == 1) {
+            if ([tag isEqualToNumber:@(1)]) { /// 增加
+                [self.addWorkRecordSubject sendNext:nil];
+            }else if ([tag isEqualToNumber:@(2)]) {  ///修改
+                [self.updateWorkRecordSubject sendNext:nil];
+
+//                NSString * data = [LKEntcry decryptAES:[requestJson objectForKey:@"data"]];
+//                id  dataDict = [LKCustomMethods dictionaryWithJsonString:data];
+//                if (dataDict != nil && [dataDict isKindOfClass:[NSDictionary class]]) {
+//                    @strongify(self);
+//
+//                }else {
+//                    [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+//                }
+            }else if ([tag isEqualToNumber:@(3)]) { ///删除
+                [self.deleteWorkRecordSubject sendNext:nil];
+            }            
+        }else {
+            [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+        }
+        
+    }];
+}
+
+- (RACSubject *)addWorkRecordSubject {
+    if (_addWorkRecordSubject == nil) {
+        _addWorkRecordSubject = [RACSubject subject];
+    }
+    return _addWorkRecordSubject;
+}
+- (RACSubject *)deleteWorkRecordSubject {
+    if (_deleteWorkRecordSubject == nil) {
+        _deleteWorkRecordSubject = [RACSubject subject];
+    }
+    return _deleteWorkRecordSubject;
+}
+- (RACSubject *)updateWorkRecordSubject {
+    if (_updateWorkRecordSubject == nil) {
+        _updateWorkRecordSubject = [RACSubject subject];
+    }
+    return _updateWorkRecordSubject;
+}
+@end

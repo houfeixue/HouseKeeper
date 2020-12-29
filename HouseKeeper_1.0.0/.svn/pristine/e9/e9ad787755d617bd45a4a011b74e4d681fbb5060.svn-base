@@ -1,0 +1,84 @@
+//
+//  LKBaseViewController.h
+//  Project
+//
+//  Created by heshenghui on 2018/7/1.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "LKBaseViewModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface LKBaseViewController : UIViewController
+
+/**
+ *  VIEW是否渗透导航栏
+ * (YES_VIEW渗透导航栏下／NO_VIEW不渗透导航栏下)
+ */
+@property (assign,nonatomic) BOOL isExtendLayout;
+
+
+-(void)setNavigationTop;
+/**
+ * 功能：导航栏
+ * 参数：title
+ */
+@property (nonatomic, copy) NSString* navBarTitle;
+/**
+ * 功能：隐藏显示导航栏
+ * 参数：（1）是否隐藏导航栏：isHide
+ *      （2）是否有动画过渡：animated
+ */
+-(void)hideNavigationBar:(BOOL)isHide
+                animated:(BOOL)animated;
+
+/**
+ * 功能：隐藏显示TabBar
+ * 参数：（1）是否隐藏导航栏：isHide
+ *      （2）是否有动画过渡：animated
+ */
+-(void)hideTabBar:(BOOL)isHide
+         animated:(BOOL)animated;
+
+//设置为淡白色色背景
+- (void)setNavigationBarWhiteBackground ;
+/** 添加黑色返回按钮 */
+- (void)addBlackBackButton;
+/**
+ * 功能：添加RightNavButton
+ * 参数：
+ */
+- (UIButton*)addRightNavButtonWithTitle:(NSString*)title
+                                 action:(SEL)action;
+
+/**
+ * 功能：添加RightNavButton
+ * 参数：
+ */
+- (UIButton*)addRightNavButtonWithImage:(UIImage*)image
+                                 action:(SEL)action;
+/**
+ * 功能：
+       ：自定义titleView
+ * 参数：
+ */
+- (void)addTitleViewWithTitle:(UIView*)titleView;
+
+
+/**
+ * 功能：添加LeftNav
+ * 参数：
+ */
+- (UIButton*)addLeftNavButtonWithTitle:(NSString*)title
+                                action:(SEL)action;
+- (UILabel*)addLeftNavLabelWithTitle:(NSString*)title;
+- (UIImageView*)addLeftNavImageWithTitle:(NSString*)image;
+-(void)backAction:(id)sender;
+
+- (LKRequestViewModel *)createDataSource;
+
+@end
+
+NS_ASSUME_NONNULL_END

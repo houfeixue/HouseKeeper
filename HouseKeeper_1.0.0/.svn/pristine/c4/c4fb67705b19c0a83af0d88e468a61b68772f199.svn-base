@@ -1,0 +1,316 @@
+//
+//  LKPictureViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/12.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKUrlPictureViewController.h"
+#import "LKUrlPictureViewModel.h"
+#import "LKPictureCell.h"
+#import "LKPictureBottomView.h"
+#import "LKPictureCliassifyView.h"
+#import "LKPIctureUploadManager.h"
+#import "SDPhotoBrowser.h"
+
+@interface LKUrlPictureViewController ()<SDPhotoBrowserDelegate>
+@property (nonatomic, strong) LKUrlPictureViewModel *pictureViewModel;
+@property (nonatomic, strong) LKPictureBottomView *pictureBottomView;
+
+@property (nonatomic, strong) UIButton *pictureDeleteBtn;
+
+
+@property (nonatomic, strong) LKPictureCliassifyView *pictureCliassifyView;
+
+@property (nonatomic, strong) NSMutableArray *bigPicArray;
+
+
+@end
+
+@implementation LKUrlPictureViewController
+#pragma mark - create base views=---重写
+//设置代理
+- (LKBaseCollectionViewModel*)createDataSource
+{
+    return self.pictureViewModel;
+    
+}
+- (UICollectionViewFlowLayout*)createLayOut
+{
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc]init];
+    layout.itemSize = CGSizeMake((kScreen_Width-2*6)/3,(kScreen_Width-2*6)/3);
+    layout.minimumLineSpacing = 6;
+    layout.minimumInteritemSpacing = 6;
+    layout.headerReferenceSize = CGSizeMake(kScreen_Width,0);
+    layout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    return layout;
+}
+- (Class)collectionCellClass
+{
+    return [LKPictureCell class];
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    //设置UI
+    [self conFigUI];
+
+    
+    NSMutableDictionary * requestDict = [[NSMutableDictionary alloc]init];
+    [requestDict setObject:self.detailId forKey:@"datailId"];
+    
+    self.pictureViewModel.requestUrl = LKGetAttachments;
+    self.pictureViewModel.requestTag = 1;
+    self.pictureViewModel.requestDict = requestDict;
+    
+    @weakify(self);
+
+    [self.pictureViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+
+        if ([x isKindOfClass:[NSString class]]) {
+            NSString * type = (NSString *)x;
+            if ([type isEqualToString:@"mainViewRolad"]) {
+                [self.mainCollectionView reloadData];
+            }else if ([type isEqualToString:@"longPress"]){
+                self.pictureDeleteBtn.hidden = NO;
+                self.pictureBottomView.hidden = YES;
+                [self.mainCollectionView reloadData];
+
+            }else if ([type isEqualToString:@"deleteImageOK"]){
+                //删除图片成功
+                [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+                self.pictureDeleteBtn.hidden = YES;
+                self.pictureBottomView.hidden = NO;
+                self.pictureViewModel.selectCell = NO;
+                self.pictureViewModel.isSelectAll = NO;
+                
+                NSMutableDictionary * requestDict = [[NSMutableDictionary alloc]init];
+                [requestDict setObject:self.detailId forKey:@"datailId"];
+                
+                self.pictureViewModel.requestUrl = LKGetAttachments;
+                self.pictureViewModel.requestTag = 1;
+                self.pictureViewModel.requestDict = requestDict;
+            }
+        }else if ([x isKindOfClass:[NSDictionary class]]){
+            NSDictionary * dict = (NSDictionary *)x;
+            NSString * type = [dict objectForKey:@"type"];
+            if ([type isEqualToString:@"upload"]) {
+                //确定上传
+                NSArray * imageArray = [dict objectForKey:@"data"];
+                
+                [LKCustomMethods saveUpLoadImages:imageArray withCategoryId:self.qualityModel.detailId withCommityId:self.commityId];
+
+                [self.navigationController popViewControllerAnimated:YES];
+                
+                [[LKPIctureUploadManager shareInstance] startUpLoadimage];
+            }else if ([type isEqualToString:@"LookImage"]){
+                //图片放大 --- 数据源 - 点击的第几个
+//                LKUrlPictureViewModel
+                self.bigPicArray= [dict objectForKey:@"data"];
+                NSNumber * index = [dict objectForKey:@"index"];
+
+                DLog(@"图片放大");
+                SDPhotoBrowser *photoBrowser = [[SDPhotoBrowser alloc] init];
+                photoBrowser.sourceImagesContainerView = self.mainCollectionView;
+                photoBrowser.imageCount = self.bigPicArray.count;
+                photoBrowser.currentImageIndex = [index integerValue];
+                photoBrowser.delegate = self;
+                [photoBrowser show];
+                
+            }
+            
+        }
+    }];
+    
+    
+    
+    
+    [self checkNotification];
+}
+
+-(void)rightNavBtnClick
+{
+    
+    self.pictureViewModel.isSelectAll = !self.pictureViewModel.isSelectAll;
+    
+    if (self.pictureViewModel.isSelectAll) {
+        [self addRightNavButtonWithTitle:@"取消全选" action:@selector(rightNavBtnClick)];
+        self.pictureDeleteBtn.hidden = NO;
+        self.pictureBottomView.hidden = YES;
+        self.pictureViewModel.selectCell = YES;
+        self.pictureViewModel.isSelectAll = YES;
+        
+
+    }else{
+        
+        [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+        self.pictureDeleteBtn.hidden = YES;
+        self.pictureBottomView.hidden = NO;
+        self.pictureViewModel.selectCell = NO;
+        self.pictureViewModel.isSelectAll = NO;
+    }
+    
+    [self.mainCollectionView reloadData];
+    
+}
+
+- (NSURL *)photoBrowser:(SDPhotoBrowser *)browser highQualityImageURLForIndex:(NSInteger)index {
+    NSString *imagePath = [self.bigPicArray objectAtIndex:index];
+    return [imagePath toURL];
+}
+
+
+
+
+-(void)conFigUI
+{
+    
+    //设置导航栏
+    [self setNavBarTitle:self.name];
+    [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+    
+    
+    if ([_type isEqualToString:@"look"]) {
+        [self.view addSubview:self.pictureBottomView];
+        [self.pictureBottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+            if (LK_IS_IOS_11) {
+                make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+            }else{
+                make.bottom.equalTo(self.view.mas_bottom);
+            }
+            make.left.right.equalTo(self.view);
+            make.height.equalTo(@(50));
+        }];
+        [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.top.left.right.equalTo(self.view);
+            make.bottom.equalTo(self.pictureBottomView.mas_top);
+            
+        }];
+    }else if ([_type isEqualToString:@"upload"]){
+        [self.view addSubview:self.pictureCliassifyView];
+        [self.pictureCliassifyView mas_makeConstraints:^(MASConstraintMaker *make) {
+            if (LK_IS_IOS_11) {
+                make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+            }else{
+                make.bottom.equalTo(self.view.mas_bottom);
+            }
+            make.left.right.equalTo(self.view);
+            make.height.equalTo(@(50));
+        }];
+        [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.top.left.right.equalTo(self.view);
+            make.bottom.equalTo(self.pictureCliassifyView.mas_top);
+            
+        }];
+    }
+    
+    
+    [self.view addSubview:self.pictureDeleteBtn];
+    [self.pictureDeleteBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        if (LK_IS_IOS_11) {
+            make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+        }else{
+            make.bottom.equalTo(self.view.mas_bottom);
+        }
+        make.left.right.equalTo(self.view);
+        make.height.equalTo(@(50));
+    }];
+    
+}
+
+//通知
+-(void)checkNotification{
+    
+    [[[[[NSNotificationCenter defaultCenter] rac_addObserverForName:LKNetStatusNotiation object:nil] map:^id(NSNotification *value) {
+        return value.object;
+    }] distinctUntilChanged] subscribeNext:^(NSNumber * x) {
+        NSLog(@"%@",x);
+        
+        if ([x integerValue] != 2) {
+            //非Wift
+            
+            WS(weakSelf);
+            [Dialog showCustomAlertViewWithTitle:@"提示" message:@"当前非wifi网络下会消耗大量数据流量" firstButtonName:@"wifi自动上传" secondButtonName:@"立即上传" dismissHandler:^(NSInteger index) {
+                if (index == 0) {
+                    
+                }
+            }];
+        }
+    }];
+    
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+
+//lazy
+-(LKUrlPictureViewModel *)pictureViewModel
+{
+    if (_pictureViewModel == nil) {
+        _pictureViewModel = [[LKUrlPictureViewModel alloc]init];
+    }
+    return _pictureViewModel;
+}
+
+-(LKPictureBottomView *)pictureBottomView
+{
+    if (_pictureBottomView == nil) {
+        _pictureBottomView = [[LKPictureBottomView alloc]initWithFrame:CGRectMake(0, 0, kScreen_Width, 50)];
+        
+    }
+    return _pictureBottomView;
+}
+-(LKPictureCliassifyView *)pictureCliassifyView{
+    
+    if (_pictureCliassifyView == nil) {
+        _pictureCliassifyView = [[LKPictureCliassifyView alloc]initWithFrame:CGRectMake(0, 0, kScreen_Width, 50)];
+        WS(weakSelf)
+        _pictureCliassifyView.pictureClassifyClick = ^(NSString *status) {
+            if ([status isEqualToString:@"pictureClassify"]) {
+                
+            }else if ([status isEqualToString:@"upload"]){
+                //确定按钮
+                
+                weakSelf.pictureViewModel.sure = @"upload";
+                /*
+                 DLog(@"self.qualityModel.ruleId : %@",weakSelf.qualityModel.ruleId);
+                 [LKCustomMethods saveUpLoadImages:self.imageArray withCategoryId:weakSelf.qualityModel.ruleId];
+                 [weakSelf.navigationController popViewControllerAnimated:YES];
+                 */
+            }
+        };
+    }
+    return _pictureCliassifyView;
+}
+
+-(UIButton *)pictureDeleteBtn
+{
+    if (_pictureDeleteBtn == nil) {
+        _pictureDeleteBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_pictureDeleteBtn setTitle:@"删除" forState:UIControlStateNormal];
+        [_pictureDeleteBtn setImage:[UIImage imageNamed:@"notes_icon_delete"] forState:UIControlStateNormal];
+        _pictureDeleteBtn.titleLabel.font = LK_10font;
+        
+        [_pictureDeleteBtn setTitleColor:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] forState:UIControlStateNormal];
+        _pictureDeleteBtn.backgroundColor = [UIColor colorWithRed:247/255.0 green:247/255.0 blue:247/255.0 alpha:1/1.0];
+        
+        [_pictureDeleteBtn setTitleEdgeInsets:UIEdgeInsetsMake(25, 0, 0, 0) withImageEdgeInsets:UIEdgeInsetsMake(0, 35, 20, 0)];
+        _pictureDeleteBtn.hidden = YES;
+        
+        @weakify(self);
+        [[_pictureDeleteBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            self.pictureViewModel.deleteImages = @"deleteImages";
+            
+            
+        }];
+    }
+    return _pictureDeleteBtn;
+}
+
+@end

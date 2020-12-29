@@ -1,0 +1,236 @@
+//
+//  LKLookPictureViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/23.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKLookPictureViewController.h"
+#import "LKLookPictureViewModel.h"
+#import "LKPictureCell.h"
+#import "LKLookPicViewCell.h"
+#import "LKPicHeaderReusableView.h"
+#import "LKQualityReportModel.h"
+#import "LKLookPictureCell.h"
+#import "LKLookPicCategoryModel.h"
+#import "SDPhotoBrowser.h"
+@interface LKLookPictureViewController ()<UITableViewDelegate,UITableViewDataSource,SDPhotoBrowserDelegate>
+
+{
+    NSInteger  selectTableIndex;
+}
+@property(nonatomic,strong)UITableView * mainTable;
+@property(nonatomic,strong)LKLookPictureViewModel * lookViewModel;
+@property(nonatomic,strong)NSMutableArray * alumbsArray;
+
+@property (nonatomic, strong) NSMutableArray *pictureUrlArray;
+
+@end
+
+@implementation LKLookPictureViewController
+
+
+//设置代理
+- (LKBaseCollectionViewModel*)createDataSource
+{
+    return self.lookViewModel;
+    
+}
+- (UICollectionViewFlowLayout*)createLayOut
+{
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc]init];
+    layout.itemSize = CGSizeMake(((kScreen_Width-80-10 +LKRightMargin)-2*6)/3,((kScreen_Width-80-10+LKRightMargin)-2*6)/3);
+    layout.minimumLineSpacing = 6;
+    layout.minimumInteritemSpacing = 6;
+    layout.headerReferenceSize = CGSizeMake(kScreen_Width-80-10+LKRightMargin,50);
+    layout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    return layout;
+}
+- (Class)collectionCellClass
+{
+    return [LKLookPictureCell class];
+}
+- (Class)collectionHeaderReusableViewClass//section  header
+{
+    return [LKPicHeaderReusableView class];
+    
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    selectTableIndex = 0;
+    self.lookViewModel.pictureCollectionView = self.mainCollectionView;
+    self.alumbsArray = [[LKPictureDBManager shareManager]fetchAlumbData];
+    [self _setUpView];
+    
+//    LKSpotcheckcountImages;
+    NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+    [dict setObject:self.recordId forKey:@"recordId"];
+    
+    self.lookViewModel.requestUrl = LKSpotcheckcountImages;
+    self.lookViewModel.requestDict = dict;
+    
+    @weakify(self);
+
+    [self.lookViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+
+        if ([x isKindOfClass:[NSString class]]) {
+            NSString * type = (NSString *) x;
+            if([type isEqualToString:@"MainCollectReload"]){
+                
+                self.dataArray = self.lookViewModel.dataArray;
+                [self.mainCollectionView reloadData];
+                [self.mainTable reloadData];
+                [self handlePictureUrlArray];
+
+            }
+            
+        }else if ([x isKindOfClass:[NSIndexPath class]]){
+            NSIndexPath *indexPath = (NSIndexPath *)x;
+            SDPhotoBrowser *photoBrowser = [SDPhotoBrowser new];
+            photoBrowser.delegate = self;
+            NSInteger currentImageIndex = 0;
+            NSIndexPath *currentSelectIndexPath;
+            for (NSInteger i = 0; i < self.pictureUrlArray.count; i ++ ) {
+                NSMutableDictionary *param = [self.pictureUrlArray objectAtIndex:i];
+                NSIndexPath *index = [param objectForKey:@"indexPath"];
+                if (index.section == indexPath.section && index.item == indexPath.item) {
+                    currentImageIndex = i;
+                    currentSelectIndexPath = [NSIndexPath indexPathForItem:index.item inSection:index.section];
+                    break;
+                }
+            }
+            photoBrowser.sourceImagesContainerViewIndexPath = currentSelectIndexPath;
+            photoBrowser.currentImageIndex = currentImageIndex;
+            photoBrowser.imageCount = self.pictureUrlArray.count;
+            photoBrowser.sourceImagesContainerView = self.lookViewModel.pictureCollectionView;
+            [photoBrowser show];
+//            NSArray*itemArray=[NSArray array];
+//            itemArray=[self.mainCollectionView indexPathsForVisibleItems];
+//            if (itemArray.count>0) {
+//                NSIndexPath * indexPath = [itemArray objectAtIndex:0];
+//                 NSIndexPath*dex=[NSIndexPath indexPathForRow:indexPath.section inSection:0];
+//               [self.mainTable cellForRowAtIndexPath:dex];
+//
+//            }
+        
+        }
+    }];
+    
+    
+}
+
+- (void)handlePictureUrlArray {
+    NSMutableArray *tempArray = [NSMutableArray array];
+    for (NSInteger i = 0; i < self.dataArray.count; i ++ ) {
+        LKLookPicCategoryModel *categoryModel = [self.dataArray objectAtIndex:i];
+        for (NSInteger j = 0; j < categoryModel.images.count; j ++ ) {
+            LKLookPicModel *picModel = [categoryModel.images objectAtIndex:j];
+            NSMutableDictionary *param = [NSMutableDictionary dictionary];
+            [param setObject:[NSString stringWithFormat:@"%@%@",LKIconHost,picModel.url] forKey:@"url"];
+            NSIndexPath *indexPath = [NSIndexPath indexPathForItem:j inSection:i];
+            [param setObject:indexPath forKey:@"indexPath"];
+            [tempArray addObject:param];
+        }
+    }
+    self.pictureUrlArray = [tempArray mutableCopy];
+}
+
+-(void)_setUpView
+{
+    [self setNavBarTitle:@"抽查照片"];
+    [self.view addSubview:self.mainTable];
+    [self.mainTable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.bottom.equalTo(self.view);
+        make.width.equalTo(@(80));
+    }];
+    
+    [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.bottom.equalTo(self.view);
+        make.left.equalTo(self.mainTable.mas_right).offset(10);
+        make.right.equalTo(self.view).offset(LKRightMargin);
+    }];
+}
+#pragma mark - SD
+- (NSURL *)photoBrowser:(SDPhotoBrowser *)browser highQualityImageURLForIndex:(NSInteger)index {
+    NSMutableDictionary *param = [self.pictureUrlArray objectAtIndex:index];
+    return [[param objectForKey:@"url"] toURL];
+}
+#pragma mark - table delegate
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return  self.dataArray.count;
+}
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    LKLookPicViewCell * cell = [tableView dequeueReusableCellWithIdentifier:@"LKLookPicViewCell"];
+    
+    if (cell == nil) {
+        cell = [[LKLookPicViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LKLookPicViewCell"];
+    }
+    
+    id  model = [self.dataArray objectAtIndex:indexPath.row];
+    if (selectTableIndex == indexPath.row) {
+        [cell setViewWithModel:model withSelect:YES];
+
+    }else{
+        [cell setViewWithModel:model withSelect:NO];
+
+    }
+    
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    LKLookPicCategoryModel * model = [self.dataArray objectAtIndex:indexPath.row];
+
+    return [tableView fd_heightForCellWithIdentifier:@"LKLookPicViewCell" configuration:^(LKLookPicViewCell *cell) {
+        cell.nameLabel.text = model.categoryName;
+    }];
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    selectTableIndex = indexPath.row;
+    [self.mainTable reloadData];
+    LKLookPicCategoryModel * model = [self.dataArray objectAtIndex:indexPath.row];
+    if (model.images.count>0) {
+        
+        NSIndexPath*dex=[NSIndexPath indexPathForRow:0 inSection:indexPath.row];
+        [self.mainCollectionView scrollToItemAtIndexPath:dex atScrollPosition:(UICollectionViewScrollPositionTop) animated:NO];
+        [self.mainTable scrollToRowAtIndexPath:indexPath atScrollPosition:(UITableViewScrollPositionTop) animated:YES];
+    }
+}
+
+//lazy
+-(UITableView *)mainTable
+{
+    if (_mainTable == nil) {
+        _mainTable = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStylePlain];
+        _mainTable.delegate = self;
+        _mainTable.dataSource = self;
+        _mainTable.backgroundColor =  LKF7Color;
+        _mainTable.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [_mainTable registerClass:[LKLookPicViewCell class] forCellReuseIdentifier:@"LKLookPicViewCell"];
+    }
+    return _mainTable;
+}
+-(LKLookPictureViewModel *)lookViewModel
+{
+    if (_lookViewModel == nil) {
+        _lookViewModel = [[LKLookPictureViewModel alloc]init];
+    }
+    return _lookViewModel;
+}
+- (NSMutableArray *)pictureUrlArray {
+    if (_pictureUrlArray == nil) {
+        _pictureUrlArray = [NSMutableArray array];
+    }
+    return _pictureUrlArray;
+}
+
+@end

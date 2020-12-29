@@ -1,0 +1,301 @@
+//
+//  LKPicturesViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPicturesViewController.h"
+#import "LKPictureCell.h"
+#import "LKPicturesViewModel.h"
+#import "LKPicturesHeadView.h"
+#import "LKPicturesSectionHeaderReusableView.h"
+#import "LKPictureActionVIew.h"
+
+#import "LKPictureHandleVC.h"
+#import "LKSelectClassityListView.h"
+#import "LKWorkPicUpLoadViewController.h"
+
+@interface LKPicturesViewController ()
+
+@property(nonatomic,assign)NSInteger picSelectCount;
+@property(nonatomic,strong)LKPicturesViewModel *pictureViewModel;
+@property(nonatomic,strong)LKPicturesHeadView *picturesHeadView;
+@property(nonatomic,strong)LKPictureActionVIew *pictureActionVIew;
+/** 相册列表 **/
+@property (nonatomic, strong) LKSelectClassityListView *selectClassifyListView;
+/** 相册选择移动Model */
+
+@property (nonatomic, strong) LKAlumbModel *selectAlumbModel;
+
+@end
+
+@implementation LKPicturesViewController
+
+//设置代理
+- (LKBaseCollectionViewModel*)createDataSource
+{
+    return self.pictureViewModel;
+    
+}
+- (UICollectionViewFlowLayout*)createLayOut
+{
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc]init];
+    layout.itemSize = CGSizeMake((kScreen_Width-2*6)/3,(kScreen_Width-2*6)/3);
+    layout.minimumLineSpacing = 6;
+    layout.minimumInteritemSpacing = 6;
+    layout.headerReferenceSize = CGSizeMake(kScreen_Width,50);
+    layout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    return layout;
+}
+- (Class)collectionCellClass
+{
+    return [LKPictureCell class];
+}
+
+- (Class)collectionHeaderReusableViewClass//section  header
+{
+    return [LKPicturesSectionHeaderReusableView class];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self _setUpView];
+    
+    self.pictureViewModel.categoryId = _categoryId;
+    
+    @weakify(self);
+    
+    [self.pictureViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        
+        if ([x isKindOfClass:[NSString class]]) {
+            NSString * type = (NSString *)x;
+            if ([type isEqualToString:@"MainCollectReload"]) {
+                [self.mainCollectionView reloadData];
+            }else if ([type isEqualToString:@"selectStatusMainCollectReload"]) {
+                [self setNavBarTitle:@"选择图片"];
+                [self.mainCollectionView reloadData];
+            }else if ([type isEqualToString:@"cancelSelectStatusMainCollectReload"]) {
+                [self setNavBarTitle:self.name];
+                [self.mainCollectionView reloadData];
+            }
+        }else if ([x isKindOfClass:[NSDictionary class]]){
+            NSDictionary * dict = (NSDictionary *)x;
+            NSString *type = [dict stringForKey:@"type"];
+            if ([type isEqualToString:@"count"]) {
+                NSNumber *count = [dict numberForKey:@"count"];
+                self.picSelectCount = [count integerValue];
+                if ([count integerValue] == 0) {
+//                    [self setNavBarTitle:self.name];
+                    [self setNavBarTitle:@"选择图片"];
+                    
+                    self.pictureActionVIew.backgroundColor =  [UIColor colorWithRed:204/255.0 green:204/255.0 blue:204/255.0 alpha:1/1.0];
+                    self.pictureActionVIew.upLoadBtn.userInteractionEnabled = NO;
+                    self.pictureActionVIew.moveBtn.userInteractionEnabled = NO;
+                    self.pictureActionVIew.deleteBtn.userInteractionEnabled = NO;
+                }else{
+                    [self setNavBarTitle:[NSString stringWithFormat:@"已选择%@张",count]];
+                    self.pictureActionVIew.backgroundColor = [UIColor colorWithRed:66/255.0 green:65/255.0 blue:82/255.0 alpha:1/1.0];;
+                    self.pictureActionVIew.upLoadBtn.userInteractionEnabled = YES;
+                    self.pictureActionVIew.moveBtn.userInteractionEnabled = YES;
+                    self.pictureActionVIew.deleteBtn.userInteractionEnabled = YES;
+                }
+
+            }else if ([type isEqualToString:@"updataPicModel"]){
+                LKPictureModel *model = [dict objectForKey:@"data"];
+                LKPictureHandleVC * vc =[[LKPictureHandleVC alloc]init];
+                vc.picModel = model;
+                vc.alumbModel = self.alumbModel;
+                
+                vc.pictureHandleBackClick = ^(NSNumber *categoryId) {
+                    if ([categoryId isEqualToNumber:self.categoryId]) {
+                        return ;
+                    }else{
+                        self.pictureViewModel.categoryId = self.categoryId;
+                        [[NSNotificationCenter defaultCenter]postNotificationName:LKMovePhotoSucessNotiation object:nil];
+
+
+                    }
+                };
+                [self.navigationController pushViewController:vc animated:YES];
+
+            }else if ([type isEqualToString:@"move"]){
+                //移动
+                NSArray * array =[dict objectForKey:@"data"];
+                BOOL isMove = [[LKPictureDBManager shareManager]deleteDataWithAlumbName:self.categoryId withData:array insertToAlumbname:self.selectAlumbModel.categoryId];
+                
+                if (isMove) {
+                    [LKCustomMethods showWindowMessage:@"图片转移成功"];
+                    
+                    self.pictureViewModel.categoryId = self.categoryId;
+                    
+                    //刷新header
+                    [self setNavBarTitle:self.name];
+                    NSInteger count = [[LKPictureDBManager shareManager]fetchAlumbCountFromCategory:self.categoryId];
+                    [self.picturesHeadView conDataName:self.name withCount:[NSString stringWithFormat:@"%ld",(long)count]];
+                    [[NSNotificationCenter defaultCenter]postNotificationName:LKMovePhotoSucessNotiation object:nil];
+                    
+                }else{
+                    
+                    [LKCustomMethods showWindowMessage:@"图片转移失败"];
+                }
+                
+            }else if ([type isEqualToString:@"upLoad"]){
+                
+                LKWorkPicUpLoadViewController * lvc =[[LKWorkPicUpLoadViewController alloc]init];
+                lvc.imageArray = [dict arrayForKey:@"data"];
+                [self.navigationController pushViewController:lvc animated:YES];
+                
+            }
+        }
+    }];
+    
+    //通知
+    [[[NSNotificationCenter defaultCenter]rac_addObserverForName:LKDeletePhotoSucessNotiation object:nil]subscribeNext:^(NSNotification * _Nullable x) {
+        //刷新header 数量
+        @strongify(self)
+        [self setNavBarTitle:self.name];
+        NSInteger count = [[LKPictureDBManager shareManager]fetchAlumbCountFromCategory:self.categoryId];
+        [self.picturesHeadView conDataName:self.name withCount:[NSString stringWithFormat:@"%ld",(long)count]];
+    }];
+    
+}
+
+-(void)_setUpView
+{
+    //导航栏
+    [self setNavBarTitle:_name];
+     //view
+    [self.view addSubview:self.picturesHeadView];
+    [self.view addSubview:self.pictureActionVIew];
+    
+    
+    NSInteger count = [[LKPictureDBManager shareManager]fetchAlumbCountFromCategory:_categoryId];
+    [self.picturesHeadView conDataName:_name withCount:[NSString stringWithFormat:@"%ld",(long)count]];
+    [self.picturesHeadView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.equalTo(self.view);
+        make.height.equalTo(@(40));
+        
+    }];
+    [self.pictureActionVIew mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.bottom.equalTo(self.view.mas_bottom).inset(kSafeAreaBottomHeight);
+        make.left.right.equalTo(self.view);
+        make.height.equalTo(@(50));
+    }];
+    
+    [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.view);
+        make.top.equalTo(self.picturesHeadView.mas_bottom);
+        make.bottom.equalTo(self.pictureActionVIew.mas_top);
+    }];
+    
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+//lazy
+
+-(LKPicturesViewModel *)pictureViewModel
+{
+    if (_pictureViewModel == nil) {
+        _pictureViewModel = [[LKPicturesViewModel alloc]init];
+    }
+    return _pictureViewModel;
+}
+
+-(LKPicturesHeadView *)picturesHeadView{
+    if (_picturesHeadView == nil) {
+        _picturesHeadView = [[LKPicturesHeadView alloc]init];
+    }
+    return _picturesHeadView;
+}
+
+-(LKPictureActionVIew *)pictureActionVIew{
+    if (_pictureActionVIew == nil) {
+        _pictureActionVIew = [[LKPictureActionVIew alloc]initWithFrame:CGRectMake(0, 0, kScreen_Width, 50)];
+        _pictureActionVIew.backgroundColor =  [UIColor colorWithRed:204/255.0 green:204/255.0 blue:204/255.0 alpha:1/1.0];
+        _pictureActionVIew.upLoadBtn.userInteractionEnabled = NO;
+        _pictureActionVIew.moveBtn.userInteractionEnabled = NO;
+        _pictureActionVIew.deleteBtn.userInteractionEnabled = NO;
+
+        WS(weakSelf);
+        _pictureActionVIew.pictureActionClick = ^(NSString *status) {
+            if ([status isEqualToString:@"upLoad"]) {
+                //一键上传
+                
+                [Dialog showCustomAlertViewWithTitle:@"提示" message:[NSString stringWithFormat:@"确定上传这%ld张照片？", (long)weakSelf.picSelectCount] firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+                    if (index == 1) {
+                        
+                        weakSelf.pictureViewModel.actionType = @"upLoad";
+
+                        
+                        
+                    }
+                }];
+                
+            }else if ([status isEqualToString:@"move"]){
+                  //转移
+                
+                [Dialog showCustomAlertViewWithTitle:@"提示" message:[NSString stringWithFormat:@"确定转移这%ld张照片？", (long)weakSelf.picSelectCount] firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+                    if (index == 1) {
+                        [weakSelf.view addSubview:weakSelf.selectClassifyListView];
+                        [weakSelf.selectClassifyListView mas_makeConstraints:^(MASConstraintMaker *make) {
+                            make.left.right.top.equalTo(weakSelf.view);
+                            make.bottom.equalTo(weakSelf.pictureActionVIew.mas_top);
+                            
+                        }];
+                    }
+                }];
+                
+                
+                
+            }else if ([status isEqualToString:@"delete"]){
+                //删除
+                [Dialog showCustomAlertViewWithTitle:@"提示" message:[NSString stringWithFormat:@"确定删除这%ld张照片？", (long)weakSelf.picSelectCount] firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+                    if (index == 1) {
+                        weakSelf.pictureViewModel.actionType = @"delete";
+                    }
+                }];
+            }
+        };
+    }
+    return _pictureActionVIew;
+}
+
+-(LKSelectClassityListView *)selectClassifyListView
+{
+    if (_selectClassifyListView == nil) {
+        _selectClassifyListView = [[LKSelectClassityListView alloc]init];
+        WS(weakSelf)
+        _selectClassifyListView.selectListClick = ^(LKAlumbModel *model) {
+            DLog(@"selectListClick : %@",model);
+            
+//            weakSelf.pictureViewModel.categoryId = model.categoryId;
+            [weakSelf.selectClassifyListView removeFromSuperview];
+            weakSelf.selectAlumbModel = model;
+
+            weakSelf.pictureViewModel.actionType = @"move";
+            
+        };
+        
+    }
+    return _selectClassifyListView;
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

@@ -1,0 +1,178 @@
+//
+//  LKWorkRecordVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/16.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKWorkRecordVC.h"
+#import "LKCalendarView.h"
+#import "LKWorkRecordTitleView.h"
+#import "LKWorkRecordViewModel.h"
+#import "LKBottomButton.h"
+#import "LKAddWorkRecordVC.h"
+
+@interface LKWorkRecordVC()
+@property (nonatomic, strong) LKCalendarView *calendarView;
+@property (nonatomic, strong) LKWorkRecordTitleView *titleView;
+@property (nonatomic, strong) NSDate *currentSelectDate;
+@property (nonatomic, strong) UIButton *rightBtn;
+@property (nonatomic, strong) LKWorkRecordViewModel *recordViewModel;
+@property (nonatomic, strong) NSDateFormatter *formatter;
+@property (nonatomic, strong) LKBottomButton *bottomButton;
+@end
+
+@implementation LKWorkRecordVC
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self createUI];
+}
+- (void)createUI {
+    self.rightBtn = [self addRightNavButtonWithImage:[UIImage imageNamed:@"notes_icon_calender"] action:@selector(rightBtnClick)];
+    self.mainTableView.estimatedRowHeight = 150.f;
+    self.mainTableView.rowHeight = UITableViewAutomaticDimension;
+    [self.view addSubview:self.bottomButton];
+    [self.bottomButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.bottom.right.mas_equalTo(0);
+        make.height.mas_equalTo(kSafeAreaBottomHeight + 50);
+    }];
+    [self.mainTableView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.right.left.equalTo(self.view);
+        make.bottom.equalTo(self.bottomButton.mas_top);
+    }];
+    self.currentSelectDate = [NSDate date];
+    [self createNavTitleView];
+    [self createCalendarView];
+    [self bindViewModelData];
+    [self loadRecordListData];
+    /** 添加工作记录 */
+    @weakify(self);
+    self.bottomButton.bottomButtonClick = ^{
+        @strongify(self);
+        LKAddWorkRecordVC *vc = [[LKAddWorkRecordVC alloc] init];
+        vc.workDate = [self.calendarView.dateFormatter stringFromDate:self.currentSelectDate];
+        [self.navigationController pushViewController:vc animated:YES];
+    };
+}
+- (void)bindViewModelData {
+    @weakify(self);
+    [self.recordViewModel.loadDataSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self);
+        [self.mainTableView reloadData];
+    }];
+    [self.recordViewModel.cellClickSubject subscribeNext:^(LKWorkRecordListModel *  _Nullable workRecordListModel) {
+        @strongify(self);
+        LKAddWorkRecordVC *vc = [[LKAddWorkRecordVC alloc] init];
+        vc.isEdit = YES;
+        vc.workDate = [self.calendarView.dateFormatter stringFromDate:self.currentSelectDate];
+        vc.listModel = workRecordListModel;
+        [self.navigationController pushViewController:vc animated:YES];
+    }];
+}
+- (void)loadRecordListData {
+    self.recordViewModel.requestTag = 1;
+    self.recordViewModel.requestUrl = LKWorkRecordList;
+    /** 默认当天的 */
+    [self setRequestDictDate];
+}
+- (void)setRequestDictDate {
+    NSString *requestDateString = [self.formatter stringFromDate:self.currentSelectDate];
+    self.recordViewModel.requestDict = @{@"createTime":requestDateString};
+}
+- (void)createNavTitleView {
+    [self addTitleViewWithTitle:self.titleView];
+    self.titleView.currentSelectDate = self.currentSelectDate;
+    @weakify(self);
+    self.titleView.selectDate = ^(NSDate *selectDate) {
+        @strongify(self);
+        DLog(@"%@",[self.calendarView.dateFormatter stringFromDate:selectDate]);
+        self.currentSelectDate = selectDate;
+        [self setRequestDictDate];
+    };
+}
+- (void)createCalendarView {
+    [self.view addSubview:self.calendarView];
+    [self.view bringSubviewToFront:self.calendarView];
+    @weakify(self);
+    self.calendarView.selectDate = ^(NSDate *selectedDate) {
+        @strongify(self);
+        self.currentSelectDate = selectedDate;
+        self.titleView.currentSelectDate = selectedDate;
+        [self hiddenCalendarView];
+        [self setRequestDictDate];
+    };
+}
+- (void)rightBtnClick {
+    self.rightBtn.enabled = NO;
+    [self performSelector:@selector(enableRightBtn) withObject:nil afterDelay:1];
+    if (self.calendarView.hidden == YES) {
+        [self showCalendarView];
+    }else {
+        [self hiddenCalendarView];
+    }
+}
+- (void)enableRightBtn {
+    self.rightBtn.enabled = YES;
+}
+#pragma mark - LKCalendar
+- (void)hiddenCalendarView {
+    [UIView animateWithDuration:1 animations:^{
+        self.calendarView.frame = CGRectMake(0, -kScreen_Height + kStatusBarHeight + kNavBarHeight, kScreen_Width,  kScreen_Height - kStatusBarHeight - kNavBarHeight);
+    } completion:^(BOOL finished) {
+        self.calendarView.hidden = YES;
+    }];
+}
+- (void)showCalendarView {
+    [self.calendarView.calendar selectDate:self.currentSelectDate scrollToDate:YES];
+    [UIView animateWithDuration:1 animations:^{
+        self.calendarView.frame = CGRectMake(0,0, kScreen_Width, kScreen_Height - kStatusBarHeight - kNavBarHeight);
+        self.calendarView.hidden = NO;
+    } completion:^(BOOL finished) {
+    }];
+}
+- (Class)tableCellClass {
+    return [LKWorkRecordCell class];
+}
+- (LKBaseTableViewModel*)createDataSource {
+    return self.recordViewModel;
+}
+#pragma mark - lazy
+- (LKCalendarView *)calendarView {
+    if (_calendarView == nil) {
+        _calendarView = [[LKCalendarView alloc] init];
+        _calendarView.frame = CGRectMake(0, -kScreen_Height + kStatusBarHeight + kNavBarHeight, kScreen_Width,  kScreen_Height - kStatusBarHeight - kNavBarHeight);
+        _calendarView.hidden = YES;
+    }
+    return _calendarView;
+}
+- (LKWorkRecordTitleView *)titleView {
+    if (_titleView == nil) {
+        _titleView = [[LKWorkRecordTitleView alloc] init];
+    }
+    return _titleView;
+}
+- (LKWorkRecordViewModel *)recordViewModel {
+    if (_recordViewModel == nil) {
+        _recordViewModel = [[LKWorkRecordViewModel alloc] init];
+    }
+    return _recordViewModel;
+}
+- (NSDateFormatter *)formatter {
+    if (_formatter == nil) {
+        _formatter = [[NSDateFormatter alloc] init];
+        [_formatter setDateFormat:@"yyyy-MM-dd"];
+        NSTimeZone *timeZone = [NSTimeZone timeZoneWithName:@"Asia/Beijing"];
+        [_formatter setTimeZone:timeZone];
+    }
+    return _formatter;
+}
+- (LKBottomButton *)bottomButton {
+    if (_bottomButton == nil) {
+        _bottomButton = [[LKBottomButton alloc] init];
+    }
+    return _bottomButton;
+}
+@end

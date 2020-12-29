@@ -1,0 +1,198 @@
+//
+//  LKQualityListVIewCell.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/16.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityListVIewCell.h"
+#import "LKQualityInfoModel.h"
+
+@implementation LKQualityListVIewCell
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+    
+    // Configure the view for the selected state
+}
+//重写view
+- (void)_setupViews
+{
+    [self.contentView addSubview:self.whiteView];
+    self.contentView.backgroundColor = LKF7Color;
+    
+    [self.contentView addSubview:self.nameLabel];
+    [self.contentView addSubview:self.scoreStatusBtn];
+    [self.contentView addSubview:self.lineView];
+    [self.contentView addSubview:self.referenceLabel];
+    [self.contentView addSubview:self.scoreBtn];
+    
+    [self.scoreStatusBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.contentView).offset(-10);
+        make.top.equalTo(self.contentView).offset(10);
+        make.height.mas_equalTo(48);
+        make.width.mas_equalTo(80);
+    }];
+    
+    [self.nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(LKLeftMargin*2);
+        
+        make.right.equalTo(self.scoreStatusBtn.mas_left).offset(LKRightMargin*2);
+        make.height.mas_greaterThanOrEqualTo(48);
+        make.top.equalTo(self.contentView).offset(10);
+        
+    }];
+    
+    [self.lineView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(LKLeftMargin*2);
+        make.right.equalTo(self.contentView).offset(LKRightMargin*2);
+        make.height.equalTo(@(1));
+        make.top.equalTo(self.nameLabel.mas_bottom).offset(5);
+        
+    }];
+    [self.scoreBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.contentView).offset(LKRightMargin*2);
+        make.top.equalTo(self.lineView.mas_bottom).offset(10);
+        make.height.mas_equalTo(30);
+        make.width.mas_equalTo(76);
+    }];
+    [_scoreBtn hyb_addCornerRadius:5];
+    _scoreBtn.hyb_borderColor = LKBlueColor;
+    _scoreBtn.hyb_borderWidth = 0.6f;
+    
+    
+    [self.referenceLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(LKLeftMargin*2);
+        make.right.equalTo(self.scoreBtn.mas_left);
+        make.height.mas_equalTo(14);
+        make.top.equalTo(self.lineView).offset(17);
+        make.bottom.equalTo(self.contentView).offset(-17-10);
+        
+    }];
+    
+    [self.whiteView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(LKLeftMargin);
+        make.right.equalTo(self.contentView).inset(LKLeftMargin);
+        make.top.equalTo(self.contentView).inset(8);
+        make.bottom.equalTo(self.contentView).inset(8);
+    }];
+    
+    
+}
+
+
+
+-(void)conFigCellwithData:(id)data atIndex:(NSIndexPath *)indexPath
+{
+    if ([data isKindOfClass:[LKQualityInfoModel class]]) {
+        LKQualityInfoModel *model = (LKQualityInfoModel *)data;
+        
+        
+        self.nameLabel.attributedText = [NSString getAttributeStringWithimage:[UIImage imageNamed:@"line"] imageBounds:CGRectMake(0, -2, 4, 15) withLabelText:[NSString stringWithFormat:@" %@",model.ruleInfo] font:LK_16font textColor:[UIColor colorWithRed:85/255.0 green:85/255.0 blue:85/255.0 alpha:1/1.0]];
+        
+        _referenceLabel.text = [NSString stringWithFormat:@"参考分%@分",model.fullMark];
+        
+        if (model.scort != nil) {
+            [_scoreStatusBtn setTitle:@"已评分" forState:UIControlStateNormal];
+            
+            _referenceLabel.attributedText = [NSString getAttributeStringWithLabelText:[NSString stringWithFormat:@"参考分%@分",model.fullMark] font:LK_14font textColor:[ColorUtil colorWithHex:@"#434152"] changeText:[NSString stringWithFormat:@"    得分%@分",model.scort] changeFont:LK_14font changeColor:LKBlueColor];
+            [_scoreStatusBtn setTitleColor: [UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] forState:UIControlStateNormal];
+            
+        }else{
+            [_scoreStatusBtn setTitle:@"未评分" forState:UIControlStateNormal];
+            [_scoreStatusBtn setTitleColor:LKRedColor forState:UIControlStateNormal];
+            
+            _referenceLabel.text = [NSString stringWithFormat:@"参考分%@分",model.fullMark];
+            
+        }
+    }
+    
+    
+}
+
+//lazy
+
+-(UIView *)whiteView{
+    if (_whiteView == nil) {
+        _whiteView = [[UIView alloc]init];
+        _whiteView.backgroundColor = [UIColor whiteColor];
+    }
+    return _whiteView;
+}
+
+-(UILabel *)nameLabel{
+    if (_nameLabel == nil) {
+        _nameLabel = [[UILabel alloc]init];
+        _nameLabel.font = LK_14font;
+        _nameLabel.textColor = [ColorUtil colorWithHex:@"#434152"];
+        _nameLabel.text = @"项目物业服务中心公示物业架构照片";
+        _nameLabel.numberOfLines = 0;
+        
+    }
+    return _nameLabel;
+}
+
+-(UIView *)lineView
+{
+    if (_lineView == nil) {
+        _lineView = [UIView new];
+        _lineView.backgroundColor = LKF7Color;
+    }
+    return _lineView;
+}
+
+-(UIButton *)scoreStatusBtn
+{
+    if (_scoreStatusBtn == nil) {
+        _scoreStatusBtn =[UIButton buttonWithType:UIButtonTypeCustom];
+        [_scoreStatusBtn setTitle:@"未评分" forState:UIControlStateNormal];
+        [_scoreStatusBtn setTitleColor:LKRedColor forState:UIControlStateNormal];
+        [_scoreStatusBtn setImage:[UIImage imageNamed:@"app_icon_forward"] forState:UIControlStateNormal];
+        [_scoreStatusBtn setTitleEdgeInsets:UIEdgeInsetsMake(0, 0, 0, 20) withImageEdgeInsets:UIEdgeInsetsMake(0, 60, 0, 0)];
+        _scoreStatusBtn.titleLabel.font = LK_12font;
+    }
+    return _scoreStatusBtn;
+}
+
+-(UILabel *)referenceLabel
+{
+    if (_referenceLabel == nil) {
+        _referenceLabel = [[UILabel alloc]init];
+        _referenceLabel.font = LK_14font;
+        _referenceLabel.textColor = [ColorUtil colorWithHex:@"#434152"];
+        _referenceLabel.text = @"参考分  1 分";
+        
+    }
+    return _referenceLabel;
+}
+
+-(UIButton *)scoreBtn{
+    if (_scoreBtn == nil) {
+        _scoreBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_scoreBtn setTitle:@"一键评分" forState:UIControlStateNormal];
+        [_scoreBtn setTitleColor:LKBlueColor forState:UIControlStateNormal];
+        _scoreBtn.titleLabel.font = LK_13font;
+        _scoreBtn.backgroundColor = [UIColor whiteColor];
+        @weakify(self)
+        
+        [[[_scoreBtn rac_signalForControlEvents:UIControlEventTouchUpInside]takeUntil:self.rac_prepareForReuseSignal]subscribeNext:^(id x) {
+            @strongify(self);
+            
+            if (self.qualityListCellClick) {
+                self.qualityListCellClick(@"score");
+            }
+            
+            
+        }];
+        
+    }
+    return _scoreBtn;
+}
+
+@end

@@ -1,0 +1,223 @@
+//
+//  LKQualityScoreDetailViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/20.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityScoreDetailViewController.h"
+#import "LKScoreBottomView.h"
+#import "LKLookPictureViewController.h"
+#import "LKAddPictureItemView.h"
+
+
+@interface LKQualityScoreDetailViewController ()<LKAddPictureItemViewDelegate>
+{
+    LKInputTextView * _scoreDetailView;
+}
+@property(nonatomic,strong)UIScrollView * mainScroll;
+@property(nonatomic,strong)LKScoreBottomView * scoreBottomView;
+@property (nonatomic, strong) LKAddPictureItemView *pictureItemView;
+
+@end
+
+@implementation LKQualityScoreDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self conFigUI];
+}
+
+-(void)conFigUI{
+    
+    [self setNavBarTitle:@"品质抽查"];
+    
+    [self.view addSubview:self.mainScroll];
+    [self.view addSubview:self.scoreBottomView];
+    [self.scoreBottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.view);
+        if (LK_IS_IOS_11) {
+            make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+        }else{
+            make.bottom.equalTo(self.view.mas_bottom);
+        }
+        make.height.equalTo(@(50));
+        
+    }];
+    
+    [self.mainScroll mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.equalTo(self.view);
+        make.bottom.equalTo(self.scoreBottomView.mas_top);
+
+    }];
+    
+    
+    UILabel * titleLabel = [[UILabel alloc]init];
+    titleLabel.font = LK_13font;
+    titleLabel.backgroundColor = LKF7Color;
+    titleLabel.textColor = [UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0];
+    [self.mainScroll addSubview:titleLabel];
+    [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.equalTo(@(30));
+        make.top.equalTo(self.mainScroll);
+        make.right.equalTo(self.view.mas_right);
+    }];
+    [titleLabel setHeadIndent:LKLeftMargin withEndIndent:LKRightMargin withText:@"标题（获取事项标题）"];
+    
+    UILabel * nameLabel = [[UILabel alloc]init];
+    nameLabel.numberOfLines = 0;
+    nameLabel.font = LK_15font;
+    nameLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    [self.mainScroll addSubview:nameLabel];
+    
+    [nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.mas_greaterThanOrEqualTo(60);
+        make.top.equalTo(titleLabel.mas_bottom);
+        make.width.equalTo(@(kScreen_Width));
+    }];
+    [nameLabel setHeadIndent:LKLeftMargin withEndIndent:LKRightMargin withText:@"项目物业服务中心公示物业管理中心架构照片"];
+    [nameLabel borderForColor:LKF7Color borderWidth:10 borderType:UIBorderSideTypeBottom];
+
+    
+    UILabel * standardLabel = [[UILabel alloc]init];
+    standardLabel.numberOfLines = 0;
+    standardLabel.text = @"无公示得0分；公示不全扣0.5分";
+    standardLabel.font = LK_15font;
+    standardLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    
+    [self.mainScroll addSubview:standardLabel];
+    [standardLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll).offset(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(50);
+        make.right.equalTo(self.mainScroll).offset(LKRightMargin);
+        make.top.equalTo(nameLabel.mas_bottom);
+    }];
+    [standardLabel borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+
+    UILabel * scoreLabel = [[UILabel alloc]init];
+    scoreLabel.numberOfLines = 0;
+    scoreLabel.text = @"1分";
+    scoreLabel.font = LK_15font;
+    scoreLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    
+    [self.mainScroll addSubview:scoreLabel];
+    [scoreLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll).offset(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(50);
+        make.right.equalTo(self.mainScroll).offset(LKRightMargin);
+        make.top.equalTo(standardLabel.mas_bottom);
+    }];
+    [scoreLabel borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+
+    LKInputTextView * _checkScoreView = [[LKInputTextView alloc]init];
+    [_checkScoreView bindDataWithText:@"检查得分" TextFont:LK_14font TextColor:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] placeholder:@"请输入检查结果得分" textFieldText:nil textFieldCanEdit:YES isShowNextBtn:NO];
+    [self.mainScroll addSubview:_checkScoreView];
+    [_checkScoreView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.equalTo(@(50));
+        make.width.equalTo(@(kScreen_Width));
+        make.top.equalTo(scoreLabel.mas_bottom);
+    }];
+    [_checkScoreView borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+
+     _scoreDetailView = [[LKInputTextView alloc]init];
+    [_scoreDetailView bindDataWithText:@"扣分描述" TextFont:LK_14font TextColor:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] placeholder:@"请输入检查点具体问题及评价" textFieldText:nil textFieldCanEdit:YES isShowNextBtn:NO];
+    _scoreDetailView.backgroundColor = [UIColor redColor];
+    [self.mainScroll addSubview:_scoreDetailView];
+    [_scoreDetailView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mainScroll);
+        make.height.equalTo(@(50));
+        make.width.equalTo(@(kScreen_Width));
+        make.top.equalTo(_checkScoreView.mas_bottom);
+    }];
+    [_scoreDetailView borderForColor:LKF7Color borderWidth:kLineHeight borderType:UIBorderSideTypeBottom];
+    
+    [self.view layoutIfNeeded];
+    self.pictureItemView.frame = CGRectMake(0, CGRectGetMaxY(_scoreDetailView.frame), kScreen_Width, 150);
+    [self.mainScroll addSubview:self.pictureItemView];
+//    [self.pictureItemView bindPictureData:[@[[UIImage imageNamed:@"456"],[UIImage imageNamed:@"456"],[UIImage imageNamed:@"456"],[UIImage imageNamed:@"456"],[UIImage imageNamed:@"456"]] mutableCopy] titleName:@"工作照片"];
+    
+
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+//lazy
+-(UIScrollView *)mainScroll
+{
+    if (_mainScroll == nil) {
+        _mainScroll = [[UIScrollView alloc]init];
+        _mainScroll.backgroundColor = [UIColor whiteColor];
+    }
+    return _mainScroll;
+}
+
+
+-(LKScoreBottomView *)scoreBottomView
+{
+    if (_scoreBottomView == nil) {
+        _scoreBottomView = [[LKScoreBottomView alloc]init];
+        WS(weakSelf)
+        _scoreBottomView.pictureLookClick = ^(NSString *status) {
+            LKLookPictureViewController * vc =[[LKLookPictureViewController alloc]init];
+            [weakSelf.navigationController pushViewController:vc animated:YES];
+        };
+    }
+    return _scoreBottomView;
+}
+- (LKAddPictureItemView *)pictureItemView {
+    if (_pictureItemView == nil) {
+        _pictureItemView = [[LKAddPictureItemView alloc] init];
+        _pictureItemView.delegate = self;
+    }
+    return _pictureItemView;
+}
+
+#pragma mark - footerViewDelegate
+- (void)LKAddPictureItemViewDelegateViewHeight:(CGFloat)pictureViewHeight {
+    self.pictureItemView.frame = CGRectMake(0, CGRectGetMaxY(_scoreDetailView.frame), kScreen_Width, pictureViewHeight);
+    CGFloat maxHeight = CGRectGetMaxY(self.pictureItemView.frame);
+    if (maxHeight <= kScreen_Height - kStatusBarHeight - kNavBarHeight) {
+        self.mainScroll.contentSize = CGSizeMake(kScreen_Width, kScreen_Height - kStatusBarHeight - kNavBarHeight + 1);
+    }else {
+        self.mainScroll.contentSize = CGSizeMake(kScreen_Width,maxHeight);
+    }
+}
+//选择方式
+- (void)LKSelectPictureTypeViewDelegateView
+{
+            CustomActionSheet * sheet = [[CustomActionSheet alloc]initWithTitle:nil OtherButtons:@[@"工作相册",@"工作拍照"] CancleButton:@"取消" Rect:CGRectMake(0, 0, kScreen_Width, kScreen_Height)];
+            [[UIApplication sharedApplication].keyWindow addSubview:sheet];
+            [sheet show];
+    
+            sheet.actionClick = ^(NSInteger index) {
+                DLog(@"%d",index);
+                
+                if (index == 1) {
+                    DLog(@"工作相册");
+                    
+                }else if (index == 2){
+                    DLog(@"工作拍照");
+
+                    
+                }
+            };
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

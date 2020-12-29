@@ -1,0 +1,254 @@
+//
+//  ChatViewVC.m
+//  HouseKeeper
+//
+//  Created by Lin Hu on 2018/8/2.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "ChatViewVC.h"
+#import "LKMessage.h"
+#import "LKMessageCell.h"
+#import "LKMessageFrame.h"
+#import <IQKeyboardManager/IQKeyboardManager.h>
+
+@interface ChatViewVC ()<UITableViewDataSource,UITableViewDelegate,UITextFieldDelegate>
+
+
+/** 信息记录数据 */
+@property(nonatomic, strong) NSMutableArray *messages;
+
+/** 信息输入框 */
+@property (strong, nonatomic)  UITextField *inputView;
+@end
+
+@implementation ChatViewVC
+
+- (void)viewDidLoad {
+    [IQKeyboardManager sharedManager].enableAutoToolbar = NO;
+    [super viewDidLoad];
+    self.navBarTitle = @"张老三";
+    [self createUI];
+    
+    [self scrollTableToFoot:YES];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+-(void)closeKeyboard{
+    [self.inputView endEditing:YES];
+    [self.mainTableView endEditing:YES];
+}
+
+-(void)createUI{
+    self.mainTableView.dataSource = self;
+    self.mainTableView.delegate = self;
+    self.mainTableView.backgroundColor = [UIColor whiteColor];
+    self.mainTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    // 禁止选中cell
+    [self.mainTableView setAllowsSelection:NO];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(closeKeyboard)];
+    [self.mainTableView addGestureRecognizer:tap];
+    
+    // 设置虚拟键盘监听器
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
+    [self.mainTableView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.view.mas_left);
+        make.top.equalTo(self.view.mas_top);
+        make.right.equalTo(self.view.mas_right);
+        make.bottom.equalTo(self.view.mas_bottom).inset(50);
+    }];
+    
+    
+    //// 创建一个底部输入框
+    UIView *bottomView = [[UIView alloc] init];
+    bottomView.backgroundColor = [UIColor lightGrayColor];
+    [self.view addSubview:bottomView];
+    [bottomView addSubview:self.inputView];
+    
+    UIButton * sendButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [sendButton setTitle:@"发送" forState:UIControlStateNormal];
+    sendButton.backgroundColor = [UIColor lightGrayColor];
+    sendButton.layer.cornerRadius = 10;
+    sendButton.clipsToBounds = YES;
+    [bottomView addSubview:sendButton];
+    [bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.view.mas_left);
+        make.right.equalTo(self.view.mas_right);
+        make.bottom.equalTo(self.view.mas_bottom);
+        make.height.mas_equalTo(50);
+    }];
+    
+    [sendButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(bottomView.mas_right).inset(LKLeftMargin);
+        make.centerY.equalTo(bottomView.mas_centerY);
+        make.width.mas_equalTo(70);
+        make.height.mas_equalTo(40);
+    }];
+    [self.inputView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(bottomView.mas_left).inset(LKLeftMargin);
+        make.right.equalTo(sendButton.mas_left).inset(LKLeftMargin);
+        make.top.equalTo(bottomView.mas_top).inset(3);
+        make.bottom.equalTo(bottomView.mas_bottom).inset(3);
+    }];
+    
+    @weakify(self);
+    [[sendButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了发送");
+        if (self.inputView.text.length!= 0) {
+            [self textFieldShouldReturn:self.inputView];
+        }
+       
+    }];
+}
+
+
+#pragma mark  - 滑到最底部
+- (void)scrollTableToFoot:(BOOL)animated
+{
+    NSInteger s = [self.mainTableView numberOfSections];  //有多少组
+    if (s<1) return;  //无数据时不执行 要不会crash
+    NSInteger r = [self.mainTableView numberOfRowsInSection:s-1]; //最后一组有多少行
+    if (r<1) return;
+    NSIndexPath *ip = [NSIndexPath indexPathForRow:r-1 inSection:s-1];  //取最后一行数据
+    [self.mainTableView scrollToRowAtIndexPath:ip atScrollPosition:UITableViewScrollPositionBottom animated:animated]; //滚动到最后一行
+}
+
+
+
+#pragma mark - 数据加载
+/** 延迟加载plist文件数据 */
+- (NSMutableArray *)messages {
+    if (nil == _messages) {
+        NSArray *dictArray = [NSArray arrayWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"messages.plist" ofType:nil]];
+        
+        NSMutableArray *mdictArray = [NSMutableArray array];
+        for (NSDictionary *dict in dictArray) {
+            LKMessage *message = [LKMessage messageWithDictionary:dict];
+            
+            // 判断是否发送时间与上一条信息的发送时间相同，若是则不用显示了
+            LKMessageFrame *lastMessageFrame = [mdictArray lastObject];
+            if (lastMessageFrame && [message.time isEqualToString:lastMessageFrame.message.time]) {
+                message.hideTime = YES;
+            }
+            
+            LKMessageFrame *messageFrame = [[LKMessageFrame alloc] init];
+            messageFrame.message = message;
+            [mdictArray addObject:messageFrame];
+        }
+        
+        _messages = mdictArray;
+    }
+    
+    return _messages;
+}
+
+
+
+
+
+#pragma mark - dataSource方法
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return  self.messages.count;
+}
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    LKMessageCell *cell = [LKMessageCell cellWithTableView:self.mainTableView];
+    cell.messageFrame = self.messages[indexPath.row];
+    
+    return cell;
+}
+
+
+#pragma mark - tableView代理方法
+/** 动态设置每个cell的高度 */
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    LKMessageFrame *messageFrame = self.messages[indexPath.row];
+    return messageFrame.cellHeight;
+}
+
+#pragma mark - scrollView 代理方法
+/** 点击拖曳聊天区的时候，缩回键盘 */
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    // 1.缩回键盘
+    [self.view endEditing:YES];
+}
+
+
+#pragma mark - 监听事件
+- (void) keyboardWillChangeFrame:(NSNotification *) note {
+    // 1.取得弹出后的键盘frame
+    CGRect keyboardFrame = [note.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    
+    // 2.键盘弹出的耗时时间
+    CGFloat duration = [note.userInfo[UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    
+    // 3.键盘变化时，view的位移，包括了上移/恢复下移
+    CGFloat transformY = keyboardFrame.origin.y - self.view.frame.size.height;
+    
+    [UIView animateWithDuration:duration animations:^{
+        self.view.transform = CGAffineTransformMakeTranslation(0, transformY);
+    }];
+}
+
+#pragma mark - TextField 代理方法
+/** 回车响应事件 */
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    // 我方发出信息
+    [self sendMessageWithContent:textField.text andType:MessageTypeMe];
+    
+    // 自动回复
+    [self sendMessageWithContent:[NSString stringWithFormat:@"%@\n%@", textField.text, @",你说啥听不见！！！"] andType:MessageTypeOhter];
+    
+    // 消除消息框内容
+    self.inputView.text = nil;
+    
+    [self.mainTableView reloadData];
+    
+    // 滚动到最新的消息
+    NSIndexPath *lastIndexPath = [NSIndexPath indexPathForRow:self.messages.count - 1 inSection:0];
+    [self.mainTableView scrollToRowAtIndexPath:lastIndexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+    
+    return YES; // 返回值意义不明
+}
+
+// 发送消息
+- (void) sendMessageWithContent:(NSString *) text andType:(MessageType) type {
+    // 获取当前时间
+    NSDate *date = [NSDate date];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateFormat = @"yyyy-MMM-dd hh:mm:ss";
+    NSString *dateStr = [formatter stringFromDate:date];
+    
+    // 我方发出信息
+    NSDictionary *dict = @{@"text":text,
+                           @"time":dateStr,
+                           @"type":[NSString stringWithFormat:@"%d", type]};
+    
+    LKMessage *message = [[LKMessage alloc] init];
+    [message setValuesForKeysWithDictionary:dict];
+    LKMessageFrame *messageFrame = [[LKMessageFrame alloc] init];
+    messageFrame.message = message;
+    [self.messages addObject:messageFrame];
+}
+
+
+
+
+-(UIView *)inputView{
+    if (!_inputView) {
+        _inputView = [[UITextField alloc] init];
+        _inputView.leftViewMode = UITextFieldViewModeAlways;
+        // 设置信息输入框的代理
+        _inputView.delegate = self;
+        _inputView.backgroundColor = [UIColor whiteColor];
+    }
+    return _inputView;
+}
+
+@end

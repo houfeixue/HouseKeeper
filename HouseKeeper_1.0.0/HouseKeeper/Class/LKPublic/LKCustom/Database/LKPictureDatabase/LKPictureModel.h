@@ -1,0 +1,25 @@
+//
+//  LKPictureModel.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/12.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface LKPictureModel : NSObject
+
+@property(nonatomic,copy)NSString * picName;//图片路径
+@property(nonatomic,copy)NSString * des;//描述
+@property(nonatomic,copy)NSString * time;//时间戳
+@property(nonatomic,copy)NSString * timeStr;//年月日
+
+@property(nonatomic,copy)NSString * area; //地点
+@property(nonatomic,strong)UIImage * image; //图片
+
+@property(nonatomic,assign)BOOL  isSelect; //是否选择
+
+
+
+@end

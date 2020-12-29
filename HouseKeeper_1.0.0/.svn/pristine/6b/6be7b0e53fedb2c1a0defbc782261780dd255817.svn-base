@@ -1,0 +1,84 @@
+//
+//  LKCustomTool.m
+//      
+//
+//  Created by sunny on 2018/6/20.
+//
+
+#import "LKCustomTool.h"
+
+@implementation LKCustomTool
++ (NSString *)getIndex:(NSMutableArray *)listArray {
+    if (listArray.count == 0) {
+        return @"1";
+    }else if (listArray.count < 10){
+        return @"2";
+    }else{
+        if (listArray.count%10 == 0) {
+            return [NSString stringWithFormat:@"%ld",(long)(listArray.count/10+1)];
+        }else{
+            return [NSString stringWithFormat:@"%ld",(long)(listArray.count/10+2)];
+        }
+    }
+}
+
++ (BOOL)isBlankString:(id)string{
+    if (![string isKindOfClass:[NSString class]]) {
+        return YES;
+    }
+    if (string == (id)kCFNull || [string isKindOfClass:[NSNull class]] || string == nil || string == NULL) {
+        return YES;
+    }
+    if ([[string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] length] == 0) {
+        return YES;
+    }
+    if ([[string stringByReplacingOccurrencesOfString:@" " withString:@""] length] == 0) {
+        return YES;
+    }
+    return NO;
+}
+
++ (CGSize)calculateSize:(CGSize)size font:(UIFont *)font labelText:(NSString *)labelText{
+    CGSize expectedLabelSize = CGSizeZero;
+    
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    paragraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
+    NSDictionary *attributes = @{NSFontAttributeName:font, NSParagraphStyleAttributeName:paragraphStyle.copy};
+    expectedLabelSize = [labelText boundingRectWithSize:size options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil].size;
+    
+    return CGSizeMake(ceil(expectedLabelSize.width), ceil(expectedLabelSize.height));
+}
+
+#pragma mark - 图片相关
++ (UIImage *)composeImageOnMainImage:(UIImage *)mainImage mainImageViewFrame:(CGRect)viewFrame subImageArray:(NSArray *)imgArray subImageFrameArray:(NSArray *)frameArray {
+    if (!mainImage) {   return nil; }
+    if (viewFrame.size.width == 0 || viewFrame.size.height == 0) {   return nil; }
+    if (imgArray.count == 0) {  return nil;  }
+    if (imgArray.count != frameArray.count) {  return nil;  }
+    
+    // 此处拿到缩放比例
+    CGFloat widthScale = mainImage.size.width / viewFrame.size.width;
+//    CGFloat heightScale = mainImage.size.height / viewFrame.size.height;
+    
+    UIGraphicsBeginImageContext(CGSizeMake(mainImage.size.width, mainImage.size.height));
+    [mainImage drawInRect:CGRectMake(0, 0, mainImage.size.width, mainImage.size.height)];
+    int i = 0;
+    for (UIImage *img in imgArray) {
+        NSString *string = [frameArray objectAtIndex:i];
+        CGRect fristRect = CGRectFromString(string);
+        [img drawInRect:CGRectMake(fristRect.origin.x * widthScale, mainImage.size.height - fristRect.size.height * widthScale, fristRect.size.width * widthScale, fristRect.size.height * widthScale)];
+        i+=1;
+    }
+    UIImage *resultImg = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return resultImg == nil ? mainImage : resultImg;
+}
++ (UIImage *)makeImageWithView:(UIView *)view withSize:(CGSize)size {
+    /// 第一个参数表示区域大小。第二个参数表示是否是非透明的。如果需要显示半透明效果，需要传NO，否则传YES。第三个参数就是屏幕密度了，关键就是第三个参数 [UIScreen mainScreen].scale。
+    UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
+    [view.layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+@end

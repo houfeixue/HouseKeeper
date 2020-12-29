@@ -1,0 +1,58 @@
+//
+//  LKWorkPicUpLoadViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/30.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKWorkPicUpLoadViewController.h"
+#import "LKWorkUpLoadViewCell.h"
+#import "LKWorkUpLoadViewModel.h"
+
+@interface LKWorkPicUpLoadViewController ()
+
+@property(nonatomic,strong)LKWorkUpLoadViewModel * workUpLoadViewModel;
+@end
+
+@implementation LKWorkPicUpLoadViewController
+/**  */
+-(Class)tableCellClass
+{
+    return [LKWorkUpLoadViewCell class];
+}
+
+- (LKBaseTableViewModel*)createDataSource
+{
+    return self.workUpLoadViewModel;
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+//lazy
+-(LKWorkUpLoadViewModel *)workUpLoadViewModel
+{
+    if (_workUpLoadViewModel == nil) {
+        _workUpLoadViewModel = [[LKWorkUpLoadViewModel alloc]init];
+    }
+    return _workUpLoadViewModel;
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

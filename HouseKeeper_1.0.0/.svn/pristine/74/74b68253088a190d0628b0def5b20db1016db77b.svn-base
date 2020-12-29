@@ -1,0 +1,13 @@
+//
+//  LKQualityScoreDetailViewController.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/20.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKBaseViewController.h"
+
+@interface LKQualityScoreDetailViewController : LKBaseViewController
+
+@end

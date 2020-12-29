@@ -1,0 +1,25 @@
+//
+//  UIViewController+Extension.m
+//  rqbao
+//
+//  Created by sunny on 2018/1/18.
+//  Copyright © 2018年 sunny. All rights reserved.
+//
+
+#import "UIViewController+Extension.h"
+//#import "RQBLoginVC.h"
+//#import "RQBBaseNavigationController.h"
+
+
+
+@implementation UIViewController (Extension)
+//- (void)rqb_pushVC:(UIViewController *)vc {
+//    [self cyl_pushViewController:vc animated:true];
+//}
+//- (void)presentLoginVC {
+//    RQBBaseNavigationController *nav = [[RQBBaseNavigationController alloc] initWithRootViewController:[[RQBLoginVC alloc] init]];
+//    [self.navigationController presentViewController:nav animated:YES completion:^{
+//        
+//    }];
+//}
+@end

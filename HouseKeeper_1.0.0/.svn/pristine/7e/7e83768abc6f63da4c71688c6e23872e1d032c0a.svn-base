@@ -1,0 +1,62 @@
+//
+//  LKCustomMethods.h
+//  Project
+//
+//  Created by heshenghui on 2018/7/1.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "LKUserInfoModel.h"
+
+
+@interface LKCustomMethods : NSObject
+/*
+ 隐藏导航栏
+ */
+
+/*
+显示导航栏
+*/
+
+/*
+ 提示
+ */
++(void)showView:(id )viewVC withMessage:(NSString *)message;
++(void)showWindowMessage:(NSString *)message;
+
+
+/*
+ 网络检测
+ */
++(void)checkNetWork;
+
+/*
+ 保存用户信息
+ */
++(void)saveUserInfo:(LKUserInfoModel *)userModel;
+
+/*
+ 读取用户信息
+ */
++(LKUserInfoModel *)readUserInfo;
+
+
+//字典转json格式字符串：
++ (NSString*)dictionaryToJson:(NSDictionary *)dic;
+
+
+//json格式字符串转字典：
++ (NSDictionary *)dictionaryWithJsonString:(NSString *)jsonString;
+//json格式字符串转数组：
++ (NSArray *)arrayWithJsonString:(NSString *)jsonString;
+
+
+
+/*
+ 删除Views上的控件
+ */
+
++(void)removeViewFromSuperView:(UIView *)view;
+@end
+

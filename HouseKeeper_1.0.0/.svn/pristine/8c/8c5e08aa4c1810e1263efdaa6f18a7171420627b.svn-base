@@ -1,0 +1,20 @@
+//
+//  UIViewController+Extension.h
+//  rqbao
+//
+//  Created by sunny on 2018/1/18.
+//  Copyright © 2018年 sunny. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface UIViewController (Extension)
+/*
+ * 如果正要 Push 的页面与当前栈顶的页面类型相同则取消 Push
+ * 这样做防止主界面卡顿时，导致一个 ViewController 被 Push 多次
+ */
+- (void)rqb_pushVC:(UIViewController *)vc;
+
+/** nav 弹出登录页面 */
+- (void)presentLoginVC;
+@end

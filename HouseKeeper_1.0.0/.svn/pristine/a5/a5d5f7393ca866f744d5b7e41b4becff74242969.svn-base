@@ -1,0 +1,99 @@
+//
+//  LKSelectViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/24.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKSelectViewModel.h"
+
+@implementation LKSelectViewModel
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setUp];
+        [self requestData];
+    }
+    return self;
+}
+
+-(void)setUp{
+    
+    
+    @weakify(self)
+    [[RACObserve(self,self.requestDict)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        if (self.dataArray.count>0) {
+            DLog(@"数据已存在不请求");
+            return ;
+        }
+        
+        NSLog(@"RACObserve 请求接口 url:%@ :  %@",self.requestUrl,requestDict);
+        
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+        
+    }];
+    
+    //    //cell的点击
+    //    [self.tableDidSelectSubject subscribeNext:^(NSIndexPath * index) {
+    //        NSInteger  d = index.row;
+    //        NSLog(@"tableDidSelectSubject : %d ",d);
+    //    }];
+    
+    
+}
+
+-(void)requestData{
+    
+    @weakify(self)
+    
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *  array) {
+        @strongify(self);
+        
+        NSNumber * requestTag = [array objectAtIndex:0];
+        NSString * requestString = [array objectAtIndex:1];
+        
+        NSDictionary * requestDict = [LKCustomMethods dictionaryWithJsonString:requestString];
+        
+        if ([requestTag integerValue] == 1) {
+            //请求列表接口
+            if ([[requestDict numberForKey:@"status"] integerValue] == 1) {
+                
+                
+                [self.dataArray removeAllObjects];
+                NSArray *dataArray =  [LKCustomMethods arrayWithJsonString:[LKEntcry decryptAES:[requestDict objectForKey:@"data"]]];
+                
+//                self.dataArray = [NSMutableArray arrayWithArray:[LKQualityListModel mj_objectArrayWithKeyValuesArray:dataArray]];
+//
+//                [self.cellClickSubject sendNext:@"mainViewRolad"];
+                
+            }else{
+                
+                [LKCustomMethods showWindowMessage:[requestDict objectForKey:@"msg"]];
+            }
+        }
+        
+        
+       
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray *  array) {
+        NSLog(@"%@",array);
+    }];
+    
+    
+    
+}
+
+//lazy
+-(NSMutableArray *)dataArray
+{
+    if (_dataArray == nil) {
+        _dataArray = [[NSMutableArray alloc]init];
+    }
+    return _dataArray;
+}
+@end

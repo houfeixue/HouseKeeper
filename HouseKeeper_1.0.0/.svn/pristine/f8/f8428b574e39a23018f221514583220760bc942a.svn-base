@@ -1,0 +1,202 @@
+//
+//  LKPictureViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/13.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKLookPictureViewModel.h"
+#import "LKLookPictureCell.h"
+#import "LKPictureSelectModel.h"
+#import "LKPicHeaderReusableView.h"
+#import "LKQualityReportModel.h"
+#import "LKLookPicCategoryModel.h"
+
+@implementation LKLookPictureViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        self.isEndDecelerating = YES;
+        [self requestData];
+
+        [self setUp];
+    }
+    return self;
+}
+
+-(void)setUp{
+    
+    
+    @weakify(self)
+    [[RACObserve(self,requestDict)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        NSLog(@"RACObserve 请求接口 url:%@ :  %@",self.requestUrl,requestDict);
+        
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag showHub:YES];
+    }];
+    
+    [[RACObserve(self,currentIndex)skip:1]subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        LKLookPicCategoryModel * data = [self.dataArray objectAtIndex:self.currentIndex];
+        NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+        [dict setObject:@(data.images.count) forKey:@"count"];
+        [dict setObject:@"AllCount" forKey:@"type"];
+        
+        [self.cellClickSubject sendNext:dict];
+        
+    }];
+    
+    
+    [self.refreshLoadData subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            LKLookPicCategoryModel * data = [self.dataArray objectAtIndex:self.currentIndex];
+
+            if (self.pageIndex * 21>= data.images.count) {
+                [self.refreshEndSubject sendNext:@(FooterRefresh_HasNoMoreData)];
+                
+            }else{
+                [self.refreshEndSubject sendNext:@(FooterRefresh_HasMoreData)];
+                
+            }
+            
+            NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
+            [dict setObject:@(data.images.count) forKey:@"count"];
+            [dict setObject:@"AllCount" forKey:@"type"];
+
+            
+            [self.cellClickSubject sendNext:dict];
+        });
+        
+
+    }];
+
+    
+    
+    
+}
+-(void)requestData{
+    
+    @weakify(self);
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *resultArray) {
+        @strongify(self);
+        
+        NSLog(@"请求接口完成%@-%@ : %@",self.requestUrl,self.requestDict,resultArray);
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:[resultArray objectAtIndex:1]];
+        int successResult = [[requestJson numberForKey:@"status"] intValue];
+        
+        if (successResult == 1) {
+            NSString * data = [LKEntcry decryptAES:[requestJson objectForKey:@"data"]];
+            id  dataDict = [LKCustomMethods arrayWithJsonString:data];
+            if (dataDict != nil && [dataDict isKindOfClass:[NSArray class]]) {
+                
+                DLog(@"dataDict : %@",dataDict);
+                
+               self.dataArray =   [LKLookPicCategoryModel mj_objectArrayWithKeyValuesArray:dataDict];
+                
+                [self.cellClickSubject sendNext:@"MainCollectReload"];
+            }
+            
+        }
+        
+        
+    }];
+    
+}
+//#pragma collect delegate
+
+- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
+{
+    return self.dataArray.count>0 ? 1 : 0;
+}
+
+-(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
+{
+    LKLookPicCategoryModel * data = [self.dataArray objectAtIndex:self.currentIndex];
+    
+    if (data.images.count > (self.pageIndex ) * 21) {
+        return (self.pageIndex ) * 21;
+    }
+    
+    return data.images.count;
+}
+
+- (__kindof UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    LKLookPictureCell * cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"LKLookPictureCell" forIndexPath:indexPath];
+    cell.selectBtn.hidden = YES;
+    cell.picImageView.image = [UIImage imageNamed:LKPicture_Default];
+    if (self.isEndDecelerating) {
+        LKLookPicCategoryModel * data = [self.dataArray objectAtIndex:self.currentIndex];
+        LKLookPicModel * model = [data.images objectAtIndex:indexPath.row];
+        [cell conFigCellwithData:model atIndex:indexPath];
+    }
+    
+    cell.picImageView.backgroundColor = [UIColor redColor];
+    return cell;
+    
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    CGFloat width = ((kScreen_Width-80-10+LKRightMargin) - 2*6) / 3;
+    
+    return CGSizeMake(width, width);
+    
+}
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    if ([kind isEqualToString:UICollectionElementKindSectionHeader]) {
+        LKPicHeaderReusableView * headerView =[collectionView dequeueReusableSupplementaryViewOfKind:
+                                                    UICollectionElementKindSectionHeader withReuseIdentifier:@"LKPicHeaderReusableView" forIndexPath:indexPath];
+        
+        LKLookPicCategoryModel * model = [self.dataArray objectAtIndex:self.currentIndex];
+        
+        headerView.nameLabel.text = model.categoryName;
+        headerView.countLabel.text = [NSString stringWithFormat:@"%ld张",model.images.count];
+        
+        return headerView;
+    }
+    
+    return nil;
+}
+// 设置间距，不设置默认间距比较大，导致一行放不了三个cell
+
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)section{
+    
+    return 6;
+    
+}
+
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)section{
+    
+    return 0;
+    
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    [self.cellClickSubject sendNext:indexPath];
+}
+
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
+    self.isEndDecelerating = NO;
+//    [SDWebImageManager.sharedManager cancelAll];
+//    [SDWebImageManager.sharedManager.imageCache clearMemory];
+//    [[YYWebImageManager sharedManager].cache.memoryCache removeAllObjects];
+    [[YYWebImageManager sharedManager].queue cancelAllOperations];
+}
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    self.isEndDecelerating = YES;
+    if (!self.pictureCollectionView.mj_footer.isRefreshing) {
+        NSArray *visiblePaths = [self.pictureCollectionView indexPathsForVisibleItems];
+        [self.pictureCollectionView reloadItemsAtIndexPaths:visiblePaths];
+    }
+    
+  
+}
+@end

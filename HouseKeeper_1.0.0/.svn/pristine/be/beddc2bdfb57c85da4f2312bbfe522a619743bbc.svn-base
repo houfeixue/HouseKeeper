@@ -1,0 +1,77 @@
+//
+//  LKQualityReportViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/20.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityReportViewController.h"
+#import "LKQualityReportViewModel.h"
+#import "LKQualityReportViewCell.h"
+#import "LKQualityDetailViewController.h"
+
+@interface LKQualityReportViewController ()
+@property (nonatomic, strong) LKQualityReportViewModel *qualityReportViewModel;
+
+@end
+
+@implementation LKQualityReportViewController
+/**  */
+-(Class)tableCellClass
+{
+    return [LKQualityReportViewCell class];
+}
+
+- (LKBaseTableViewModel*)createDataSource
+{
+    return self.qualityReportViewModel;
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self setNavBarTitle:@"抽查报告"];
+    [self addRightNavButtonWithTitle:@"抽查明细" action:@selector(rightBtnClick)];
+    
+    
+    @weakify(self);
+    [self.qualityReportViewModel.refreshLoadData subscribeNext:^(id x) {
+        //加载数据
+        @strongify(self)
+        self.qualityReportViewModel.requestUrl = @"https://www.baidu.com";
+        self.qualityReportViewModel.requestDict = @{@"page":@(self.dataSource.pageIndex)};
+    }];
+}
+
+
+-(void)rightBtnClick
+{
+    LKQualityDetailViewController * vc =[[LKQualityDetailViewController alloc]init];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+//lazy
+-(LKQualityReportViewModel *)qualityReportViewModel{
+    if (_qualityReportViewModel == nil) {
+        _qualityReportViewModel = [[LKQualityReportViewModel alloc]init];
+    }
+    return _qualityReportViewModel;
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

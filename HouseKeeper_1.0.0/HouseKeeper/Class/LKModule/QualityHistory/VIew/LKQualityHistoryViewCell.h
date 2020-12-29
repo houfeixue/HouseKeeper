@@ -1,0 +1,29 @@
+//
+//  LKQualityHistoryViewCell.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKBaseTableViewCell.h"
+#import "LKQualityHistoryModel.h"
+
+typedef void(^QualityHistoryCellClick)(NSString * status);
+
+
+@interface LKQualityHistoryViewCell : LKBaseTableViewCell
+
+@property(nonatomic,strong)UILabel * nameLabel;
+@property(nonatomic,strong)UILabel * timeLabel;
+@property(nonatomic,strong)UILabel * checkManLabel;
+@property(nonatomic,strong)UILabel * identityLabel;
+@property(nonatomic,strong)UILabel * scoreLabel;
+
+@property(nonatomic,strong)UIButton * detailBtn;
+@property(nonatomic,strong)UIButton * lookBtn;
+@property(nonatomic,strong)UIView * lineView;
+
+@property(nonatomic,copy)QualityHistoryCellClick qualityHistoryCellClick;
+
+@end

@@ -1,0 +1,26 @@
+//
+//  LKPicHeaderReusableView.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/24.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+typedef void(^PicturesClick)(BOOL status);
+
+
+@interface LKPicturesSectionHeaderReusableView : UICollectionReusableView
+{
+    
+    BOOL _select;
+}
+
+@property(nonatomic,strong)UILabel * nameLabel;
+@property(nonatomic,strong)UILabel * selectLabel;
+@property(nonatomic,copy)PicturesClick picturesClick;
+
+-(void)conDataTime:(NSString *)time withSelect:(BOOL )select;
+
+@end

@@ -1,0 +1,196 @@
+//
+//  LKAlertView.m
+//      
+//
+//  Created by 侯良凯 on 2018/6/29.
+//
+
+#import "LKAlertView.h"
+
+
+@interface LKAlertView()
+@property (nonatomic,strong) UIView *coverView;
+@property (nonatomic,strong) UIView *contentView;
+@property (nonatomic,strong) NSMutableArray<LKCustomAlertViewOption *> *options;
+@property (nonatomic,copy) SelectCallBack selectCallBack;
+@property (nonatomic,copy) NSString *title;
+@property (nonatomic,copy) NSString *message;
+@property (nonatomic,strong) UILabel *messageLabel;
+
+@end
+
+
+@implementation LKAlertView
+LKSingletonM(LKAlertView);
+- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message options:(NSMutableArray *)options selectCallBack:(SelectCallBack)selectCallBack
+{
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    [LKAlertView sharedLKAlertView].options = [NSMutableArray array];
+    [LKAlertView sharedLKAlertView].frame = [UIScreen mainScreen].bounds;
+    [LKAlertView sharedLKAlertView].options = options;
+    [LKAlertView sharedLKAlertView].selectCallBack = selectCallBack;
+    [LKAlertView sharedLKAlertView].title = title;
+    [LKAlertView sharedLKAlertView].message = message;
+    if (self.contentView != nil) {
+        [self.contentView removeFromSuperview];
+        self.contentView = nil;
+    }
+    [[LKAlertView sharedLKAlertView] createUI];
+    return [LKAlertView sharedLKAlertView];
+}
+- (void)createUI {
+    [self loadContentView];
+    [self addLabels];
+    [self addButtons];
+}
+- (void)loadContentView {
+    [self addSubview:self.coverView];
+    [self addSubview:self.contentView];
+    [self.contentView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.equalTo(self.mas_centerX);
+        make.centerY.equalTo(self.mas_centerY).offset(-20);
+        make.left.mas_offset(40);
+        make.right.equalTo(self.mas_right).inset(40);
+    }];
+}
+
+- (void)addLabels {
+    if (![LKCustomTool isBlankString:self.title]) {
+        UILabel *titleLabel = [[UILabel alloc] init];
+        titleLabel.text = self.title;
+        titleLabel.font =  [UIFont fontWithName:@"PingFangSC-Semibold" size:20];
+        titleLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+        titleLabel.textAlignment = NSTextAlignmentCenter;
+        [self.contentView addSubview:titleLabel];
+        [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.mas_equalTo(20);
+            make.centerX.equalTo(self);
+        }];
+    }
+    UILabel *messageLabel = [[UILabel alloc] init];
+    messageLabel.text = self.message;
+    messageLabel.textColor =  [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    messageLabel.font =  [UIFont fontWithName:@"PingFangSC-Light" size:15];
+
+    messageLabel.numberOfLines = 0;
+    messageLabel.textAlignment = NSTextAlignmentCenter;
+    [self.contentView addSubview:messageLabel];
+    CGFloat top = [LKCustomTool isBlankString:self.title] == YES ? 23 : 66;
+    [messageLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_equalTo(top);
+        make.left.equalTo(self.contentView.mas_left).offset(20);
+        make.right.equalTo(self.contentView.mas_right).inset(20);
+    }];
+    self.messageLabel = messageLabel;
+}
+- (void)addButtons {
+    if (self.options.count == 1) {
+        LKCustomAlertViewOption *option = [self.options firstObject];
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        [button setTitle:option.title forState:UIControlStateNormal];
+        [button setTitleColor:option.color forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Light" size:15];
+        [self.contentView addSubview:button];
+        [button mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.bottom.mas_equalTo(0);
+            make.height.mas_equalTo(50);
+            make.top.equalTo(self.messageLabel.mas_bottom).offset(23);
+        }];
+        button.tag = 0;
+        [button addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+        button.layer.borderWidth = 0.5f;
+        button.layer.borderColor = [[UIColor colorWithRed:235/255.0f green:235/255.0f blue:235/255.0f alpha:1] CGColor];
+    }else if (self.options.count == 2) {
+        LKCustomAlertViewOption *leftOption = [self.options firstObject];
+        UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        [leftButton setTitle:leftOption.title forState:UIControlStateNormal];
+        [leftButton setTitleColor:leftOption.color forState:UIControlStateNormal];
+        leftButton.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Light" size:15];
+        [self.contentView addSubview:leftButton];
+        [leftButton mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.bottom.mas_equalTo(0);
+            make.height.mas_equalTo(50);
+            make.top.equalTo(self.messageLabel.mas_bottom).offset(23);
+        }];
+        leftButton.tag = 0;
+        [leftButton addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+        leftButton.layer.borderWidth = 0.5f;
+        leftButton.layer.borderColor = [[UIColor colorWithRed:235/255.0f green:235/255.0f blue:235/255.0f alpha:1] CGColor];
+        
+        LKCustomAlertViewOption *rightOption = [self.options lastObject];
+        UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        [rightButton setTitle:rightOption.title forState:UIControlStateNormal];
+        [rightButton setTitleColor:rightOption.color forState:UIControlStateNormal];
+        rightButton.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Light" size:15];
+        [self.contentView addSubview:rightButton];
+        [rightButton mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(leftButton.mas_right);
+            make.right.equalTo(self.contentView.mas_right);
+            make.width.equalTo(leftButton.mas_width);
+            make.bottom.mas_equalTo(0);
+            make.height.mas_equalTo(50);
+            make.top.equalTo(self.messageLabel.mas_bottom).offset(23);
+        }];
+        rightButton.tag = 1;
+        [rightButton addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+        rightButton.layer.borderWidth = 0.5f;
+        rightButton.layer.borderColor = [[UIColor colorWithRed:235/255.0f green:235/255.0f blue:235/255.0f alpha:1] CGColor];
+    }
+}
+- (void)btnClick:(UIButton *)btn {
+    if (self.selectCallBack != nil) {
+        self.selectCallBack(btn.tag);
+        [self close];
+    }
+}
+- (UIView *)coverView {
+    if (_coverView == nil) {
+        _coverView = [[UIView alloc] initWithFrame:[UIScreen mainScreen].bounds];
+        _coverView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
+        _coverView.alpha = 0;
+    }
+    return _coverView;
+}
+- (UIView *)contentView {
+    if (_contentView == nil) {
+        _contentView = [[UIView alloc] init];
+        _contentView.backgroundColor = [UIColor whiteColor];
+        _contentView.layer.cornerRadius = 10;
+        _contentView.clipsToBounds = YES;
+    }
+    return _contentView;
+}
+- (void)close {
+    [UIView animateWithDuration:0.4f animations:^{
+        self.coverView.alpha = 0;
+        self.contentView.alpha = 0;
+    } completion:^(BOOL finished) {
+        [self removeFromSuperview];
+    }];
+}
+- (void)tapBgViewOrCancel {
+    [self close];
+}
+- (void)showAlertView {
+    [[[UIApplication sharedApplication] keyWindow] addSubview:self];
+    [UIView animateWithDuration:0.4f delay:0 usingSpringWithDamping:0.9 initialSpringVelocity:0.7 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+        self.coverView.alpha = 1;
+        self.contentView.alpha = 1;
+    } completion:^(BOOL finished) {
+        
+    }];
+}
+@end
+
+
+@implementation LKCustomAlertViewOption
+- (instancetype)initWithTitle:(NSString *)title color:(UIColor *)color {
+    self = [super init];
+    if (self) {
+        self.title = title;
+        self.color = color;
+    }
+    return self;
+    
+}
+@end

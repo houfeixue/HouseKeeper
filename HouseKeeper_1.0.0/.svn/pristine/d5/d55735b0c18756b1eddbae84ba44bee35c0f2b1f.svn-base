@@ -1,0 +1,279 @@
+//
+//  LKChatDetailVc.m
+//  HouseKeeper
+//
+//  Created by Lin Hu on 2018/8/3.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKChatDetailVc.h"
+
+/* 聊天内容模型 */
+
+#import "SDChatMessage.h"
+#import "SDChatDetail.h"
+#import "SDChatDetailFrame.h"
+
+#import "SDChatDetailTableViewCell.h"
+/* 聊天内容View */
+#import "SDChatInputView.h" //输入view
+#import "SDChatDetailTableView.h" //列表
+#import <IQKeyboardManager/IQKeyboardManager.h>
+
+#define kInputViewHeight 275
+#define kBjViewOriFrame CGRectMake(0, 0,kScreen_Width , kScreen_Height);
+
+@interface LKChatDetailVc ()<UIGestureRecognizerDelegate,SDChatInputViewDelegate,SDChatDetailTableViewLongPress,UIScrollViewDelegate>
+@property (nonatomic,strong)NSMutableArray *dataArr; //消息数据源
+@property (nonatomic,strong)SDChatDetailTableView *chatTableView;
+
+
+/**
+ 背景view
+ */
+@property (nonatomic,strong)UIView *bjView;
+
+/**
+ *  是否正在切换键盘
+ */
+@property (nonatomic, assign, getter = isChangingKeyboard) BOOL changingKeyboard;
+
+
+/**
+ 聊天弹出的view
+ */
+@property (nonatomic,strong)SDChatInputView *chatInputView;
+
+
+#pragma mark -  列表上啦加载更多
+/**
+ 下拉加载更多
+ */
+@property (nonatomic,assign) BOOL isRefresh;
+
+/**
+ 菊花
+ */
+@property (nonatomic,strong) UIActivityIndicatorView * activity;
+
+
+@end
+
+@implementation LKChatDetailVc
+
+
+-(void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    [IQKeyboardManager sharedManager].enable = NO;
+    [IQKeyboardManager sharedManager].enableAutoToolbar = NO;
+
+}
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [IQKeyboardManager sharedManager].enable = YES;
+    [IQKeyboardManager sharedManager].enableAutoToolbar = YES;
+
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self setTitle:@"会话"];
+    //系统键盘谈起通知
+    [[NSNotificationCenter defaultCenter] addObserver:self.chatInputView selector:@selector(systemKeyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    
+    //自定义键盘,系统键盘
+    [[NSNotificationCenter defaultCenter] addObserver:self.chatInputView selector:@selector(keyboardResignFirstResponder:) name:SDChatKeyboardResign object:nil];
+
+    // 2.隐藏键盘
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+    
+    
+    [self setUI];
+}
+
+#pragma mark 隐藏键盘就会调用
+- (void)keyboardWillHide:(NSNotification *)note
+{
+    [self.chatInputView.chatText resignFirstResponder];
+    [self inputViewScrollToBottom];
+}
+
+
+
+
+-(NSMutableArray *)dataArr{
+    if(!_dataArr){
+        NSArray *arr =@[
+                        @{@"msg":@"哈哈",@"msgID":@"1",@"sender":@"0",@"sendTime":@"06-23",@"msgType":@"0"},
+                        @{@"msg":@"就是不是搞死你大当家氨",@"msgID":@"2",@"sender":@"1",@"sendTime":@"02:20",@"msgType":@"3"},
+                        @{@"msg":@"你在干啥就是不是搞死你大当家氨",@"msgID":@"3",@"sender":@"0",@"sendTime":@"02:30",@"msgType":@"0"},
+                        @{@"msg":@"简单的",@"msgID":@"4",@"sender":@"1",@"sendTime":@"02:40",@"msgType":@"0"},
+                        @{@"msg":@"不告诉你不告诉你不告诉你不告诉你标题标题标题标题",@"msgID":@"4",@"sender":@"1",@"sendTime":@"02:40",@"msgType":@"0"},
+                        @{@"msg":@"不告诉你大手大脚二等奖饿哦我肯定破可怕大卡等奖饿哦我肯定破可怕大卡司",@"msgID":@"4",@"sender":@"0",@"sendTime":@"今天02:40",@"msgType":@"0"},
+                        ];
+        NSMutableArray *emptyArr =[[NSMutableArray alloc]init];
+        
+        for (NSDictionary *dic in arr){
+            SDChatMessage *msg =[SDChatMessage chatMessageWithDic:dic];
+            SDChatDetail *chat =[SDChatDetail sd_chatWith:msg];
+            SDChatDetailFrame *chatFrame =[[SDChatDetailFrame alloc]init];
+            chatFrame.chat=chat;
+            
+            [emptyArr addObject:chatFrame];
+        }
+        _dataArr =[[NSMutableArray alloc]initWithArray:emptyArr];
+        
+    }
+    return _dataArr;
+}
+
+-(UIView *)bjView{
+    if(!_bjView){
+        _bjView =[[UIView alloc]init];
+        _bjView.frame =kBjViewOriFrame;
+        _bjView.backgroundColor=[UIColor clearColor];
+    }
+    return _bjView;
+}
+
+
+-(SDChatDetailTableView *)chatTableView{
+    if(!_chatTableView){
+        _chatTableView = [[SDChatDetailTableView alloc] initWithFrame:CGRectMake(0,0, kScreen_Width, kScreen_Height-50-64) style:UITableViewStylePlain];
+        _chatTableView.sdLongDelegate=self;
+        _chatTableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
+        _chatTableView.backgroundColor = LKF2Color;
+    }
+    return _chatTableView;
+}
+// 输入view
+-(SDChatInputView *)chatInputView{
+    if (!_chatInputView){
+        _chatInputView =[[SDChatInputView alloc]initWithFrame:CGRectMake(0,kScreen_Height-50-mySizeThree(64, 64, 64, 64, 84), kScreen_Width, kInputViewHeight)];
+        _chatInputView.backgroundColor=[UIColor whiteColor];
+        _chatInputView.sd_delegate=self;
+    }
+    return _chatInputView;
+}
+
+-(void)setUI{
+    
+    [self.view addSubview:self.bjView];
+    self.view.backgroundColor=[UIColor whiteColor];
+    [self.bjView addSubview:self.chatTableView];
+    self.chatTableView.dataArray =self.dataArr;
+    [self.chatTableView reloadData];
+    [self.bjView addSubview:self.chatInputView];
+    
+    DLog(@"self.view :%@",NSStringFromCGRect(self.bjView.frame));
+    DLog(@"chatInputView :%@",NSStringFromCGRect(self.chatInputView.frame));
+    DLog(@"chatTableView :%@",NSStringFromCGRect(self.chatTableView.frame));
+    
+     [self inputViewScrollToBottom];
+}
+
+
+
+#pragma mark - SDChatDetailTableViewDelegate
+-(void)SDChatDetailTableView:(id)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    [self.chatInputView.chatText resignFirstResponder];
+    [self inputViewScrollToBottom];
+}
+
+/**
+ 键盘消失inputView在屏幕底部
+ */
+-(void)inputViewScrollToBottom{
+    DLog(@"%f    %f",kScreen_Width,kScreen_Height);
+    CGFloat chatInputHeight =CGRectGetHeight(self.chatInputView.frame);
+    self.chatInputView.frame =CGRectMake(0,kScreen_Height-mySizeThree(64, 64, 64, 64, 84)-(chatInputHeight-keyBoardDefaultHeight)-kSafeAreaBottomHeight, kScreen_Width, chatInputHeight);
+     DLog(@"chatInputView---%f",self.chatInputView.height);
+    self.chatTableView.frame =CGRectMake(0, 0, kScreen_Width, CGRectGetMinY(self.chatInputView.frame));
+     DLog(@"chatTableView---%f",self.chatTableView.height);
+    
+    [self sd_scrollToBottomWithAnimated:YES];
+}
+
+
+-(void)SDChatDetailTableViewDidScroll:(UIScrollView *)scrollView{
+    if (scrollView.contentOffset.y<=0  && self.isRefresh==NO)
+    {
+        //        [self setChatNetWorkMoreHistoryMsg];
+    }
+}
+
+#pragma mark - chatInputViewDelegate
+
+/**
+ 添加文件按钮监听
+ 
+ @param sender  添加文件按钮监听
+ */
+-(void)SDChatInputViewAddFileClicked:(UIButton *)sender{
+    DLog(@"添加图片");
+    
+   
+}
+
+
+/**
+ 添加表情按钮监听
+ 
+ @param sender 添加表情按钮监听
+ */
+-(void)SDChatInputViewAddFaceClicked:(UIButton *)sender{
+    DLog(@"添加表情");
+    DLog(@"self.frame.input:%@",NSStringFromCGRect(self.chatInputView.frame));
+}
+-(void)SDChatInputView:(SDChatInputView *)chatInputView sendTextMessage:(NSString *)textMessage{
+    
+    NSDictionary *dic =@{@"msg":textMessage,@"msgID":@"1",@"sender":[NSString stringWithFormat:@"%d",1],@"sendTime":@"06-23",@"msgType":@"0"};
+    SDChatMessage *msg =[SDChatMessage chatMessageWithDic:dic];
+    SDChatDetail *chat =[SDChatDetail sd_chatWith:msg];
+    SDChatDetailFrame *chatFrame =[[SDChatDetailFrame alloc]init];
+    chatFrame.chat=chat;
+    
+    [self.dataArr addObject:chatFrame];
+    [self.chatTableView reloadData];
+    [self sd_scrollToBottomWithAnimated:YES];
+    
+    
+}
+
+-(void)SDChatInputViewFrameWillChange:(SDChatInputView *)chatInputView{
+    DLog(@"-----chatInputView.frame:%@",NSStringFromCGRect(chatInputView.frame))
+    DLog(@"-----chatTableView1-----:%@",NSStringFromCGRect(self.chatTableView.frame))
+    self.chatTableView.frame =CGRectMake(0, 0, kScreen_Width, CGRectGetMinY(chatInputView.frame));
+    [self sd_scrollToBottomWithAnimated:YES];
+    DLog(@"-----chatTableView2-----:%@",NSStringFromCGRect(self.chatTableView.frame))
+}
+#pragma mark - textFieldDelegate
+
+-(void)SDChatDetailTableViewLongPress:(UILongPressGestureRecognizer *)longPressGr{
+    
+}
+
+
+#pragma mark - 监听键盘弹出方法
+- (void)sd_scrollToBottomWithAnimated:(BOOL)animate
+{
+    if (!self.dataArr.count) return;
+    NSIndexPath *lastIndexPath = [NSIndexPath indexPathForRow: self.dataArr.count - 1 inSection:0];
+    [self.chatTableView scrollToRowAtIndexPath: lastIndexPath atScrollPosition:UITableViewScrollPositionBottom animated:animate];
+}
+
+#pragma mark -右按钮
+
+
+-(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
+    
+//    [self.view endEditing:YES];
+    [self inputViewScrollToBottom];
+}
+
+-(void)dealloc{
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+@end

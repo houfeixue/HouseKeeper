@@ -1,0 +1,33 @@
+//
+//  NSString+Extension.h
+//  rqbao
+//
+//  Created by sunny on 2018/1/17.
+//  Copyright © 2018年 sunny. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+@interface NSString (Extension)
+
+- (NSURL *)toURL;
+/** 转换UTF-8 */
+- (NSString *)addPercentUTF8;
+- (NSString *)removeAllSapce;
+/** 判断密码是否合法 6-18 位 */
+- (BOOL)judgePasswordLegal;
+
+
+
+/** labelText + changeText == 返回的字符串  */
++ (NSMutableAttributedString *)getAttributeStringWithLabelText:(NSString *)labelText font:(UIFont *)font textColor:(UIColor *)textColor changeText:(NSString *)changeText changeFont:(UIFont *)changeFont changeColor:(UIColor *)changeColor;
+
+/** image + labelText == 返回的字符串  */
+
++ (NSMutableAttributedString *)getAttributeStringWithimage:(UIImage *)image imageBounds:(CGRect)frame withLabelText:(NSString *)labelText font:(UIFont *)font textColor:(UIColor *)textColor ;
+
++ (NSMutableAttributedString *)getAttributeStringWithimage:(UIImage *)image imageBounds:(CGRect)frame withLabelText:(NSString *)labelText font:(UIFont *)font textColor:(UIColor *)textColor withHeader:(BOOL)header;
+
+
+
+@end

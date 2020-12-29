@@ -1,0 +1,93 @@
+//
+//  Dialog.m
+//      
+//
+//  Created by 侯良凯 on 2018/6/29.
+//
+
+#import "Dialog.h"
+#import "LKAlertView.h"
+
+@interface Dialog()
+@property (nonatomic,strong) UIWindow *window;
+@property (nonatomic,strong) UIView *maskingView;
+
+@end
+
+
+@implementation Dialog
+LKSingletonM(Dialog)
++ (void)sharedShowAlertViewWithTitle:(NSString *)title message:(NSString *)message firstButtonName:(NSString *)firstButtonName  firstButtonColor:(UIColor *)color1 secondButtonName:(NSString *)secondButtonName secondButtonColor:(UIColor *)color2 dismissHandler:(void (^)(NSInteger index))dismissHandler {
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    LKCustomAlertViewOption *firstOption = [[LKCustomAlertViewOption alloc] initWithTitle:firstButtonName color:color1];
+    LKCustomAlertViewOption *secondOption = [[LKCustomAlertViewOption alloc] initWithTitle:secondButtonName color:color2];
+    [[[LKAlertView sharedLKAlertView] sharedAlertViewWithTitle:title message:message options:[NSMutableArray arrayWithArray:@[firstOption,secondOption]] selectCallBack:dismissHandler] showAlertView];
+}
++ (void)showCustomAlertViewWithTitle:(NSString *)title message:(NSString *)message ok:(void (^)(NSInteger))ok {
+    LKCustomAlertViewOption *option = [[LKCustomAlertViewOption alloc] initWithTitle:@"知道了" color:[UIColor colorWithRed:245/255.0 green:166/255.0 blue:35/255.0 alpha:1/1.0]];
+    [[Dialog sharedDialog] showCustomAlertViewTitle:title message:message buttonTitles:[NSMutableArray arrayWithArray:@[option]] handler:ok];
+}
+
+
++ (void)showCustomAlertViewWithTitle:(NSString *)title message:(NSString *)message firstButtonName:(NSString *)firstButtonName secondButtonName:(NSString *)secondButtonName dismissHandler:(void (^)(NSInteger))dismissHandler {
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    LKCustomAlertViewOption *firstOption = [[LKCustomAlertViewOption alloc] initWithTitle:firstButtonName color:LKCrownColor];
+    LKCustomAlertViewOption *secondOption = [[LKCustomAlertViewOption alloc] initWithTitle:secondButtonName color:LKCrownColor];
+    LKAlertView *alertView = [[LKAlertView alloc] initWithTitle:title message:message options:[NSMutableArray arrayWithArray:@[firstOption,secondOption]] selectCallBack:dismissHandler];
+    [alertView showAlertView];
+}
+
+
++ (void)showCustomAlertViewWithTitle:(NSString *)title message:(NSString *)message firstButtonName:(NSString *)firstButtonName  firstButtonColor:(UIColor *)color1 secondButtonName:(NSString *)secondButtonName secondButtonColor:(UIColor *)color2 dismissHandler:(void (^)(NSInteger))dismissHandler {
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    LKCustomAlertViewOption *firstOption = [[LKCustomAlertViewOption alloc] initWithTitle:firstButtonName color:color1];
+    LKCustomAlertViewOption *secondOption = [[LKCustomAlertViewOption alloc] initWithTitle:secondButtonName color:color2];
+    LKAlertView *alertView = [[LKAlertView alloc] initWithTitle:title message:message options:[NSMutableArray arrayWithArray:@[firstOption,secondOption]] selectCallBack:dismissHandler];
+    [alertView showAlertView];
+}
+
+/** 一键评分 alert */
++ (void)showScoreAlertViewWithMessage:(NSString *)message placeholderString:(NSString *)placeholderString score:(CGFloat)score dismissHandler:(void (^)(CGFloat , NSInteger, id))dismissHandler {
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    LKCustomAlertViewOption *firstOption = [[LKCustomAlertViewOption alloc] initWithTitle:@"取消" color:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1.0]];
+    LKCustomAlertViewOption *secondOption = [[LKCustomAlertViewOption alloc] initWithTitle:@"保存" color:[UIColor colorWithRed:82/255.0 green:113/255.0 blue:141/255.0 alpha:1.0]];
+    LKInputAlertView *inputView = [[LKInputAlertView alloc] initWithTitle:@"一键评分" tipMessage:@"输入真实评分：" placeholderString:placeholderString score:score message:message options:[NSMutableArray arrayWithArray:@[firstOption,secondOption]] selectCallBack:dismissHandler];
+    [inputView showAlertView];
+}
+
++ (void)showInputAlertViewWithTitle:(NSString *)title message:(NSString *)message tipMessage:(NSString *)tipMessage placeholderString:(NSString *)placeholderString score:(CGFloat)score firstButtonName:(NSString *)firstButtonName secondButtonName:(NSString *)secondButtonName dismissHandler:(void (^)( CGFloat,NSInteger, id))dismissHandler {
+    
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    LKCustomAlertViewOption *firstOption = [[LKCustomAlertViewOption alloc] initWithTitle:firstButtonName color:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1.0]];
+    LKCustomAlertViewOption *secondOption = [[LKCustomAlertViewOption alloc] initWithTitle:secondButtonName color:[UIColor colorWithRed:82/255.0 green:113/255.0 blue:141/255.0 alpha:1.0]];
+    LKInputAlertView *inputView = [[LKInputAlertView alloc] initWithTitle:title tipMessage:tipMessage placeholderString:placeholderString score:score message:message options:[NSMutableArray arrayWithArray:@[firstOption,secondOption]] selectCallBack:dismissHandler];
+    [inputView showAlertView];
+}
+
+
+- (void)showCustomAlertViewTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSMutableArray *)buttonTitles  handler:(void(^)(NSInteger))handler {
+    [[UIApplication sharedApplication].keyWindow endEditing:YES];
+    LKAlertView *alertView = [[LKAlertView alloc] initWithTitle:title message:message options:buttonTitles selectCallBack:handler];
+    [alertView showAlertView];
+}
+
+
+
+
+- (UIWindow *)window {
+    if (_window == nil) {
+        _window = [[UIWindow alloc] initWithFrame:CGRectMake(0, 0, kScreen_Width, kScreen_Height)];
+        _window.windowLevel = UIWindowLevelStatusBar;
+        _window.backgroundColor = [UIColor clearColor];
+    }
+    return _window;
+}
+
+- (UIView *)maskingView {
+    if (_maskingView == nil) {
+        _maskingView = [[UIView alloc] init];
+        _maskingView.backgroundColor = [UIColor clearColor];
+    }
+    return _maskingView;
+}
+@end

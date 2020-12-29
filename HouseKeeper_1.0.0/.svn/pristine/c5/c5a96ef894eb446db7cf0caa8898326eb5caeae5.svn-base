@@ -1,0 +1,65 @@
+//
+//  LKMergeView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKMergeView.h"
+
+@implementation LKMergeView
+
+
+- (void)createUI {
+    [super createUI];
+    self.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.2f];
+    [self addSubview:self.locationImageView];
+    
+    [self addSubview:self.locationLabel];
+    [self addSubview:self.tipLabel];
+    
+    [self.locationImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(LKLeftMargin);
+        make.top.mas_equalTo(LKLeftMargin);
+        make.height.with.mas_equalTo(20);
+    }];
+    [self.locationLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.mas_right).inset(LKLeftMargin);
+        make.top.mas_equalTo(LKLeftMargin);
+        make.left.equalTo(self.locationImageView.mas_right).offset(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(20);
+    }];
+    [self.tipLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.locationLabel.mas_bottom).inset(LKLeftMargin);
+        make.left.mas_equalTo(LKLeftMargin);
+        make.right.equalTo(self.mas_right).inset(LKLeftMargin);
+        make.bottom.equalTo(self.mas_bottom).inset(LKLeftMargin);
+    }];
+    
+}
+- (UILabel *)locationLabel {
+    if (_locationLabel == nil) {
+        _locationLabel = [[UILabel alloc] init];
+        _locationLabel.backgroundColor = LKBlackColor;
+        _locationLabel.numberOfLines = 0;
+    }
+    return _locationLabel;
+}
+- (UILabel *)tipLabel {
+    if (_tipLabel == nil) {
+        _tipLabel = [[UILabel alloc] init];
+        _tipLabel.textColor = [UIColor whiteColor];
+        _tipLabel.numberOfLines = 0;
+    }
+    return _tipLabel;
+}
+- (UIImageView *)locationImageView {
+    if (_locationImageView == nil) {
+        _locationImageView = [[UIImageView alloc] init];
+        _locationImageView.image = [UIImage imageNamed:@"2"];
+    }
+    return _locationImageView;
+}
+
+@end

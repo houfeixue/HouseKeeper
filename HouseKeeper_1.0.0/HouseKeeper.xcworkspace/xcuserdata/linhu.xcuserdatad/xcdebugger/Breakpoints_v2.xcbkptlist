@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   type = "0"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.ExceptionBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            scope = "0"
+            stopOnStyle = "0">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "HouseKeeper/Class/LKModule/Home/VC/ChatView/controller/ChatViewVC.m"
+            timestampString = "554980212.594523"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "194"
+            endingLineNumber = "194"
+            landmarkName = "-keyboardWillChangeFrame:"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "-[ChatViewVC keyboardWillChangeFrame:]"
+                  moduleName = "HouseKeeper"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/linhu/Desktop/svn-ios/HouseKeeper-7.31/HouseKeeper/Class/LKModule/Home/VC/ChatView/controller/ChatViewVC.m"
+                  timestampString = "554892018.431421"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "194"
+                  endingLineNumber = "194"
+                  offsetFromSymbolStart = "592">
+               </Location>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "__38-[ChatViewVC keyboardWillChangeFrame:]_block_invoke"
+                  moduleName = "HouseKeeper"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/linhu/Desktop/svn-ios/HouseKeeper-7.31/HouseKeeper/Class/LKModule/Home/VC/ChatView/controller/ChatViewVC.m"
+                  timestampString = "554892018.433635"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "194"
+                  endingLineNumber = "194"
+                  offsetFromSymbolStart = "15">
+               </Location>
+               <Location
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "__destroy_helper_block_.201"
+                  moduleName = "HouseKeeper"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/linhu/Desktop/svn-ios/HouseKeeper-7.31/HouseKeeper/Class/LKModule/Home/VC/ChatView/controller/ChatViewVC.m"
+                  timestampString = "554892018.435786"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "194"
+                  endingLineNumber = "194"
+                  offsetFromSymbolStart = "16">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "HouseKeeper/Class/LKModule/Home/VC/ChatView/controller/ChatViewVC.m"
+            timestampString = "554980212.594594"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "195"
+            endingLineNumber = "195"
+            landmarkName = "-keyboardWillChangeFrame:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>

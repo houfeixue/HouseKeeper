@@ -1,0 +1,175 @@
+//
+//  LKAddPictureItemView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddPictureItemView.h"
+#import "LKAddPictureView.h"
+
+@interface LKAddPictureItemView ()<LKAddPictureViewDelegate>
+@property (nonatomic, strong) UILabel *titleLabel;
+@property (nonatomic, strong) LKAddPictureView *pictureView;
+
+@property (nonatomic, strong) NSMutableArray<LKAddPictureView *> *pictureViewArray;
+
+@end
+
+@implementation LKAddPictureItemView
+- (void)createUI {
+    [super createUI];
+    _isAllowLongPressShowDeleteBtn = YES;
+    self.backgroundColor = [UIColor whiteColor];
+    self.pictureArray = [NSMutableArray arrayWithCapacity:9];
+    [self addSubview:self.titleLabel];
+    [self.titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_equalTo(16);
+        make.left.mas_equalTo(LKLeftMargin);
+        make.width.mas_equalTo(81);
+        make.height.mas_equalTo(20);
+    }];
+    [self addSubview:self.pictureView];
+    self.pictureView.index = 0;
+    [self.pictureViewArray addObject:self.pictureView];
+    self.pictureView.frame = CGRectMake(97, 11, self.pictureView.pictureViewWidth, self.pictureView.pictureViewWidth);
+    
+    self.viewHeight = 11 + ((self.pictureViewArray.count- 1)/4 + 4) * self.pictureView.pictureViewWidth + 15;
+    self.y = self.viewHeight;
+}
+
+- (void)bindPictureData:(NSMutableArray *)pictureArray titleName:(NSString *)titleName {
+    self.titleLabel.text = titleName;
+    self.pictureArray = pictureArray;
+    for (UIView *v in self.pictureViewArray) {
+        if ([v isKindOfClass:[LKAddPictureView class]]) {
+            [v removeFromSuperview];
+        }
+    }
+    [self.pictureViewArray removeAllObjects];
+    for (NSInteger i = 0; i < self.pictureArray.count; i++) {
+        LKAddPictureView *picView = [[LKAddPictureView alloc] init];
+        picView.delegate = self;
+        picView.index = i;
+        picView.selectImage = self.pictureArray[i];
+        picView.deleteBtn.hidden = YES;
+        CGFloat leftBorader = 91 + i%3*(self.pictureView.pictureViewWidth+4);
+        picView.frame = CGRectMake(leftBorader, 11 + i/3 * (self.pictureView.pictureViewWidth + 4), self.pictureView.pictureViewWidth, self.pictureView.pictureViewWidth);
+        [self addSubview:picView];
+        [self.pictureViewArray addObject:picView];
+    }
+    if ([self.delegate respondsToSelector:@selector(LKAddPictureItemViewDelegateViewHeight:)]) {
+        self.viewHeight = 11 + ((self.pictureViewArray.count - 1)/3 + 1) * (self.pictureView.pictureViewWidth + 4) + 15;
+        self.y = self.viewHeight;
+        [self.delegate LKAddPictureItemViewDelegateViewHeight:self.viewHeight];
+    }
+}
+#pragma mark - LKEvaluationPictureViewDelegate
+/** 图片按钮点击 */
+- (void)LKAddPictureViewDelegateTap:(NSInteger)index pictureView:(LKAddPictureView *)pictureView{
+    if (pictureView.selectImage != nil) {
+        /** 查看大图 */
+    }else {
+        pictureView.selectImage = [UIImage imageNamed:@"456"];
+        [self.pictureArray addObject:pictureView.selectImage];
+        [self reRefreshPictureView];
+        /** 选择照片 */
+//        UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"取消" destructiveButtonTitle:nil otherButtonTitles:@"照相",@"相册", nil];
+//        [sheet showInView:[self getCurrentViewController].view];
+    }
+}
+/** 删除图片 */
+- (void)LKAddPictureViewDelegateDelete:(NSInteger)index pictureView:(LKAddPictureView *)pictureView{
+    [self.pictureArray removeObjectAtIndex:index];
+    [self reRefreshPictureView];
+}
+- (void)LKAddPictureViewLongPress {
+    if (self.isAllowLongPressShowDeleteBtn == NO) {
+        return;
+    }
+    [self showPictureDeteleBtn];
+}
+- (void)reRefreshPictureView {
+    for (UIView *v in self.pictureViewArray) {
+        if ([v isKindOfClass:[LKAddPictureView class]]) {
+            [v removeFromSuperview];
+        }
+    }
+    [self.pictureViewArray removeAllObjects];
+    if (self.pictureArray.count == 9 ) {
+        for (NSInteger i = 0; i < self.pictureArray.count; i++) {
+            LKAddPictureView *picView = [[LKAddPictureView alloc] init];
+            picView.delegate = self;
+            picView.index = i;
+            picView.selectImage = self.pictureArray[i];
+            CGFloat leftBorader = 91 + i%3*(self.pictureView.pictureViewWidth+4);
+            picView.frame = CGRectMake(leftBorader, 11 + i/3 * (self.pictureView.pictureViewWidth + 4), self.pictureView.pictureViewWidth, self.pictureView.pictureViewWidth);
+            [self addSubview:picView];
+            [self.pictureViewArray addObject:picView];
+        }
+    }else {
+        NSMutableArray *tempArray = [NSMutableArray arrayWithArray:self.pictureArray];
+        [tempArray addObject:@""];
+        for (NSInteger i = 0; i < tempArray.count; i++) {
+            LKAddPictureView *picView = [[LKAddPictureView alloc] init];
+            picView.delegate = self;
+            picView.index = i;
+            if (i == tempArray.count - 1) {
+                picView.selectImage = nil;
+            }else {
+                picView.selectImage = tempArray[i];
+            }
+            CGFloat leftBorader = 91 + i%3*(self.pictureView.pictureViewWidth+4);
+            picView.frame = CGRectMake(leftBorader, 11 + i/3 * (self.pictureView.pictureViewWidth + 4), self.pictureView.pictureViewWidth, self.pictureView.pictureViewWidth);
+            [self addSubview:picView];
+            [self.pictureViewArray addObject:picView];
+        }
+    }
+    if ([self.delegate respondsToSelector:@selector(LKAddPictureItemViewDelegateViewHeight:)]) {
+        self.viewHeight = 11 + ((self.pictureViewArray.count- 1)/3 + 1) * (self.pictureView.pictureViewWidth + 4) + 15;
+        self.y = self.viewHeight;
+        [self.delegate LKAddPictureItemViewDelegateViewHeight:self.viewHeight];
+    }
+}
+- (void)hiddenPictureDeteleBtn {
+    for (LKAddPictureView *picture in self.pictureViewArray) {
+        if ([picture isKindOfClass:[LKAddPictureView class]]) {
+            picture.deleteBtn.hidden = YES;
+        }
+    }
+}
+- (void)showPictureDeteleBtn {
+    for (LKAddPictureView *picture in self.pictureViewArray) {
+        if ([picture isKindOfClass:[LKAddPictureView class]]) {
+            picture.deleteBtn.hidden = YES;
+            if (picture.selectImage != nil) {
+                picture.deleteBtn.hidden = NO;
+            }
+        }
+    }
+}
+#pragma mark - lazy
+- (UILabel *)titleLabel {
+    if (_titleLabel == nil) {
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.font = LK_14font;
+        _titleLabel.textColor = LKLightGrayColor;
+        _titleLabel.text = @"工作照片";
+    }
+    return _titleLabel;
+}
+- (LKAddPictureView *)pictureView {
+    if (_pictureView == nil) {
+        _pictureView = [[LKAddPictureView alloc] init];
+        _pictureView.delegate = self;
+    }
+    return _pictureView;
+}
+- (NSMutableArray *)pictureViewArray {
+    if (_pictureViewArray == nil) {
+        _pictureViewArray = [NSMutableArray array];
+    }
+    return _pictureViewArray;
+}
+@end

@@ -1,0 +1,84 @@
+//
+//  LKQualityBottomView.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/23.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKScoreBottomView.h"
+
+@implementation LKScoreBottomView
+
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self _setUpView];
+    }
+    return self;
+}
+
+/*
+@property(nonatomic,strong)UILabel *scoreLabel;
+@property(nonatomic,strong)UIButton *lookBtn;
+*/
+-(void)_setUpView{
+    
+    [self addSubview:self.scoreLabel];
+    [self addSubview:self.lookBtn];
+    
+    [self.scoreLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.height.equalTo(@(25));
+        make.width.equalTo(@(100));
+        make.centerY.equalTo(self);
+    }];
+    [self.lookBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self).offset(LKRightMargin);
+        make.height.equalTo(@(25));
+        make.width.equalTo(@(115));
+        make.centerY.equalTo(self);
+    }];
+    [self.lookBtn hyb_addCornerRadius:5];
+}
+
+//lazy
+-(UILabel *)scoreLabel
+{
+    if (_scoreLabel == nil) {
+        _scoreLabel = [[UILabel alloc]init];
+        _scoreLabel.text = @"132";
+    }
+    return _scoreLabel;
+}
+
+-(UIButton *)lookBtn
+{
+    if (_lookBtn == nil) {
+        _lookBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_lookBtn setTitle:@"查看抽查照片" forState:UIControlStateNormal];
+        _lookBtn.backgroundColor = [UIColor colorWithRed:66/255.0 green:65/255.0 blue:82/255.0 alpha:1/1.0];
+        _lookBtn.titleLabel.font = LK_13font;
+         @weakify(self)
+        [[_lookBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+
+            if (self.pictureLookClick) {
+                
+                DLog(@"pictureLookClick");
+                self.pictureLookClick(@"");
+            }
+        }];
+    }
+    return _lookBtn;
+}
+
+@end

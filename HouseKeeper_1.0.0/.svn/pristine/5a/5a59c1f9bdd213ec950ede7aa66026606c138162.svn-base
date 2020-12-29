@@ -1,0 +1,40 @@
+//
+//  LKHomePageVc.m
+//  HouseKeeper
+//
+//  Created by Lin Hu on 2018/7/31.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKHomePageVc.h"
+
+@interface LKHomePageVc ()
+
+@end
+
+@implementation LKHomePageVc
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+   
+    NSDate * newDate = [NSDate date];
+    NSString * data = [LKCustomMethods timeStrFormTime:[newDate timeIntervalSince1970] withFormatter:@"YYYY年M月d日"];
+    [self addLeftNavLabelWithTitle:data];
+    
+    
+    [self addRightNavButtonWithImage:[UIImage imageNamed:@"home_icon_messages"] action:@selector(messageAction)];
+    
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+#pragma mark - 跳转个人信息
+-(void)messageAction{
+    DLog(@"点击了个人信息");
+}
+
+@end

@@ -1,0 +1,15 @@
+//
+//  LKQualityHistoryVC.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKBaseTableViewController.h"
+
+@interface LKQualityHistoryVC : LKBaseTableViewController
+
+@property (nonatomic, strong) NSNumber *regionId;
+@property (nonatomic, copy) NSString *currentMonth;
+@end

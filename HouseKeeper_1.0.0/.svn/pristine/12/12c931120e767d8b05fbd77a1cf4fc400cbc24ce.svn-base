@@ -1,0 +1,110 @@
+//
+//  LKQualityReportViewCell.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/20.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityReportViewCell.h"
+
+@implementation LKQualityReportViewCell
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+
++ (instancetype)cellForTableView:(UITableView *)tableView reuseIdentifier:(NSString *)identifier {
+    LKQualityReportViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
+    if (cell == nil) {
+        cell = [[LKQualityReportViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:identifier];
+    }
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    return cell;
+}
+
+
+- (void)_setupViews
+{
+    self.contentView.backgroundColor = LKF7Color;
+    [self.contentView addSubview:self.whiteView];
+    [self.whiteView addSubview:self.scoreLabel];
+    [self.whiteView addSubview:self.nameLabel];
+    
+    [self.scoreLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(self.whiteView);
+        make.right.equalTo(self.whiteView).offset(LKRightMargin);
+        make.width.equalTo(@(50));
+        make.height.equalTo(@(20));
+    }];
+    
+    [self.nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.whiteView).offset(LKLeftMargin);
+        make.right.equalTo(self.scoreLabel.mas_left);
+        make.height.mas_greaterThanOrEqualTo(20);
+        make.top.equalTo(self.whiteView).offset(10);
+        make.bottom.equalTo(self.whiteView).offset(-10);
+
+    }];
+    
+    [self.whiteView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(LKLeftMargin);
+        make.right.equalTo(self.contentView).offset(LKRightMargin);
+        make.top.equalTo(self.contentView).offset(5);
+        make.bottom.equalTo(self.contentView);
+        
+    }];
+}
+
+
+-(void)conFigCellwithData:(id)data atIndex:(NSIndexPath *)indexPath
+{
+    
+    self.nameLabel.attributedText = [NSString getAttributeStringWithimage:[UIImage imageNamed:@"line"] imageBounds:CGRectMake(0, 0, 4, 15) withLabelText:@"  项目物业服务中心公示物中心公示物业架构照中心公示物业架构照业架构照片" font:LK_16font textColor:[UIColor colorWithRed:85/255.0 green:85/255.0 blue:85/255.0 alpha:1/1.0]];
+    
+    
+}
+
+//lazy
+
+-(UIView *)whiteView
+{
+    if (_whiteView == nil) {
+        _whiteView = [[UIView alloc]init];
+        _whiteView.backgroundColor = [UIColor whiteColor];
+        [_whiteView hyb_addCornerRadius:5];
+    }
+    return _whiteView;
+}
+
+-(UILabel *)nameLabel
+{
+    if (_nameLabel == nil) {
+        _nameLabel = [[UILabel alloc]init];
+        _nameLabel.numberOfLines = 0;
+    }
+    return _nameLabel;
+}
+
+-(UILabel *)scoreLabel
+{
+    if (_scoreLabel == nil) {
+        _scoreLabel = [[UILabel alloc]init];
+        _scoreLabel.text = @"1分";
+        _scoreLabel.font = LK_12font;
+        _scoreLabel.textColor = [UIColor colorWithRed:192/255.0 green:97/255.0 blue:99/255.0 alpha:1/1.0];
+        _scoreLabel.textAlignment = NSTextAlignmentRight;
+    }
+    return _scoreLabel;
+}
+
+
+@end

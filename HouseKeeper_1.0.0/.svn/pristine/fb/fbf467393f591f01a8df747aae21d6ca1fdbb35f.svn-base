@@ -1,0 +1,90 @@
+//
+//  LKPictureBottomView.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/19.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPictureBottomView.h"
+
+@implementation LKPictureBottomView
+
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+-(instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self _setUpView];
+    }
+    
+    return self;
+}
+
+-(void)_setUpView
+{
+    [self addSubview:self.nameLabel];
+    [self addSubview:self.uploadBtn];
+    [self.uploadBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(self);
+        make.right.equalTo(self).offset(LKRightMargin);
+        make.height.equalTo(@(30));
+        make.width.equalTo(@(45));
+
+    }];
+    [self.nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(self);
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.right.equalTo(self.uploadBtn.mas_left);
+        make.height.equalTo(@(30));
+        
+    }];
+    
+}
+
+
+
+//lazy
+-(UILabel *)nameLabel
+{
+    if (_nameLabel == nil) {
+        _nameLabel = [[UILabel alloc]init];
+        _nameLabel.text = @"当前m张照片待上传";
+        _nameLabel.font = LK_12font;
+        _nameLabel.textColor = [UIColor colorWithRed:51/255.0 green:51/255.0 blue:51/255.0 alpha:1/1.0];
+    }
+    return _nameLabel;
+}
+-(UIButton *)uploadBtn
+{
+    if (_uploadBtn == nil) {
+        _uploadBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_uploadBtn setTitle:@"上传" forState:UIControlStateNormal];
+        _uploadBtn.titleLabel.font = LK_12font;;
+        [_uploadBtn setTitleColor: [UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1/1.0] forState:UIControlStateNormal];
+        _uploadBtn.backgroundColor = [UIColor colorWithRed:66/255.0 green:65/255.0 blue:82/255.0 alpha:1/1.0];
+        [_uploadBtn hyb_addCornerRadius:5];
+        
+        @weakify(self);
+        
+        [[_uploadBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            
+            if(self.upLoadLoadClick){
+                self.upLoadLoadClick(@"");
+                
+            }
+        }];
+        
+    }
+    return _uploadBtn;
+}
+
+@end

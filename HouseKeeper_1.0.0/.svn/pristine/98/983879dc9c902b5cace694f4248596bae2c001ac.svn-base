@@ -1,0 +1,411 @@
+ //
+//  LKPictureViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/12.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKUrlPictureViewController.h"
+#import "LKUrlPictureViewModel.h"
+#import "LKPictureCell.h"
+#import "LKPictureBottomView.h"
+#import "LKPictureCliassifyView.h"
+#import "LKPIctureUploadManager.h"
+#import "SDPhotoBrowser.h"
+
+@interface LKUrlPictureViewController ()<SDPhotoBrowserDelegate>
+@property (nonatomic, strong) LKUrlPictureViewModel *pictureViewModel;
+@property (nonatomic, strong) LKPictureBottomView *pictureBottomView;
+
+@property (nonatomic, strong) UIButton *pictureDeleteBtn;
+
+
+@property (nonatomic, strong) LKPictureCliassifyView *pictureCliassifyView;
+
+@property (nonatomic, strong) NSMutableArray *bigPicArray;
+
+@property (nonatomic, assign)BOOL isImageSelectAll;//图片是否选择全部删除
+
+@end
+
+@implementation LKUrlPictureViewController
+#pragma mark - create base views=---重写
+//设置代理
+- (LKBaseCollectionViewModel*)createDataSource
+{
+    return self.pictureViewModel;
+    
+}
+- (UICollectionViewFlowLayout*)createLayOut
+{
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc]init];
+    layout.itemSize = CGSizeMake((kScreen_Width-2*6)/3,(kScreen_Width-2*6)/3);
+    layout.minimumLineSpacing = 6;
+    layout.minimumInteritemSpacing = 6;
+    layout.headerReferenceSize = CGSizeMake(kScreen_Width,0);
+    layout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    return layout;
+}
+- (Class)collectionCellClass
+{
+    return [LKPictureCell class];
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    //设置UI
+    self.isImageSelectAll = NO;
+    [self conFigUI];
+    NSMutableDictionary * requestDict = [[NSMutableDictionary alloc]init];
+    [requestDict setObject:self.detailId forKey:@"datailId"];
+    self.pictureViewModel.pictureCollectionView = self.mainCollectionView;
+    self.pictureViewModel.requestUrl = LKGetAttachments;
+    self.pictureViewModel.requestTag = 1;
+    self.pictureViewModel.requestDict = requestDict;
+    
+    @weakify(self);
+
+    [self.pictureViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+
+        if ([x isKindOfClass:[NSString class]]) {
+            NSString * type = (NSString *)x;
+            if ([type isEqualToString:@"mainViewRolad"]) {
+                [self.mainCollectionView reloadData];
+            }else if ([type isEqualToString:@"longPress"]){
+                self.pictureDeleteBtn.hidden = NO;
+                self.pictureBottomView.hidden = YES;
+                [self.mainCollectionView reloadData];
+
+            }else if ([type isEqualToString:@"deleteImageOK"]){
+                //删除图片成功
+                [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+                self.pictureDeleteBtn.hidden = YES;
+//                self.pictureBottomView.hidden = NO;
+                self.pictureViewModel.selectCell = NO;
+                self.pictureViewModel.isSelectAll = NO;
+                
+                NSMutableDictionary * requestDict = [[NSMutableDictionary alloc]init];
+                [requestDict setObject:self.detailId forKey:@"datailId"];
+                
+                self.pictureViewModel.requestUrl = LKGetAttachments;
+                self.pictureViewModel.requestTag = 1;
+                self.pictureViewModel.requestDict = requestDict;
+                
+                if (self.urlPictureDeleteClick) {
+                    self.urlPictureDeleteClick(@"");
+                }
+                
+            }else if ([type isEqualToString:@"netError"]){
+                //netError
+                WS(weakSelf)
+                [self.view configBlankPage:EaseBlankPageTypeNoNetWork hasData:NO hasError:NO reloadButtonBlock:^(id sender) {
+                    
+                    
+                    NSMutableDictionary * requestDict = [[NSMutableDictionary alloc]init];
+                    [requestDict setObject:self.detailId forKey:@"datailId"];
+                    weakSelf.pictureViewModel.requestUrl = LKGetAttachments;
+                    weakSelf.pictureViewModel.requestTag = 1;
+                    weakSelf.pictureViewModel.requestDict = requestDict;
+                }];
+            }
+        }else if ([x isKindOfClass:[NSDictionary class]]){
+            NSDictionary * dict = (NSDictionary *)x;
+            NSString * type = [dict objectForKey:@"type"];
+             if ([type isEqualToString:@"LookImage"]){
+                //图片放大 --- 数据源 - 点击的第几个
+                self.bigPicArray= [dict objectForKey:@"data"];
+                NSNumber * index = [dict objectForKey:@"index"];
+                SDPhotoBrowser *photoBrowser = [[SDPhotoBrowser alloc] init];
+                photoBrowser.sourceImagesContainerView = self.mainCollectionView;
+                photoBrowser.imageCount = self.bigPicArray.count;
+                photoBrowser.currentImageIndex = [index integerValue];
+                photoBrowser.delegate = self;
+                [photoBrowser show];
+                
+             }else if ([type isEqualToString:@"mainViewRolad"]){
+                 
+                 NSNumber * dataCount = [dict objectForKey:@"dataCount"];
+                 BOOL hasNOData = [dataCount integerValue] == 0 ? YES  : NO ;
+                 [self.view configBlankPage:EaseBlankPageTypeNoButton_noData hasData:!hasNOData hasError:NO reloadButtonBlock:^(id sender) {
+                     
+                 }];
+                 
+                 if (hasNOData) {
+                     [self addRightNavButtonWithTitle:@"" action:nil];
+
+                 }else{
+                     [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+                 }
+                 
+                 [self.mainCollectionView reloadData];
+                 
+             }else if ([type isEqualToString:@"singImagePress"]){
+                 NSNumber * data = [dict objectForKey:@"isSelectAll"];
+                 if ([data boolValue] == YES) {
+                     //已全部选择
+                     self.isImageSelectAll = YES;
+                     [self addRightNavButtonWithTitle:@"取消全选" action:@selector(rightNavBtnClick)];
+                 }else{
+                     //未全部选择
+                     self.isImageSelectAll = NO;
+                     [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+                     
+                 }
+                 NSNumber * selectCount = [dict objectForKey:@"SelectCount"];
+
+                 if (selectCount == 0) {
+                     [self setNavBarTitle:@"选择照片"];
+
+                 }else{
+                     [self setNavBarTitle:[NSString stringWithFormat:@"已选择%@张",selectCount]];
+                 }
+                 [self.mainCollectionView reloadData];
+                 
+             }else if ([type isEqualToString:@"SelectAll"]){
+                 
+                 NSNumber * selectCount = [dict objectForKey:@"SelectCount"];
+                 if([selectCount integerValue] == 0){
+                     [self setNavBarTitle:self.name];
+                 }else{
+                     [self setNavBarTitle:[NSString stringWithFormat:@"已选择%@张",selectCount]];
+                 }
+             }
+        }
+    }];
+}
+
+-(void)rightNavBtnClick
+{
+    
+    self.isImageSelectAll = !self.isImageSelectAll;
+    self.pictureViewModel.isSelectAll = self.isImageSelectAll;
+    if (self.pictureViewModel.isSelectAll) {
+        [self addRightNavButtonWithTitle:@"取消全选" action:@selector(rightNavBtnClick)];
+        self.pictureDeleteBtn.hidden = NO;
+        self.pictureBottomView.hidden = YES;
+        self.pictureViewModel.selectCell = YES;
+        self.pictureViewModel.isSelectAll = YES;
+        [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.top.equalTo(self.view);
+            make.bottom.equalTo(self.pictureDeleteBtn.mas_top);
+            
+        }];
+
+    }else{
+        
+        [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+        self.pictureDeleteBtn.hidden = YES;
+        self.pictureBottomView.hidden = NO;
+        self.pictureViewModel.selectCell = NO;
+        self.pictureViewModel.isSelectAll = NO;
+        
+        if([self isUpLoadImages] == NO){
+            
+            self.pictureBottomView.hidden = YES;
+            [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+                make.left.right.top.equalTo(self.view);
+                if (@available(iOS 11.0, *)) {
+                    make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+                } else {
+                    make.bottom.equalTo(self.view.mas_bottom);
+                }
+            }];
+        }
+    }
+    
+    [self.mainCollectionView reloadData];
+    
+}
+
+//判断是否还有上传照片
+-(BOOL)isUpLoadImages{
+    
+    NSArray * imageArray =[LKCustomMethods getUpLoadImagesCountFromCategoryId:self.detailId];
+    NSInteger upLoadImageCount=0;
+    for (int i=0; i<imageArray.count; i++) {
+        LKUpLoadPictureModel * model = [imageArray objectAtIndex:i];
+        if (model.upLoad) {
+            upLoadImageCount ++;
+        }
+    }
+    
+    if (upLoadImageCount == imageArray.count){
+        //没有
+        return NO;
+    }else{
+        //有
+        return YES;
+    }
+    
+}
+
+- (NSURL *)photoBrowser:(SDPhotoBrowser *)browser highQualityImageURLForIndex:(NSInteger)index {
+    NSString *imagePath = [self.bigPicArray objectAtIndex:index];
+    return [imagePath toURL];
+}
+- (UIImage *)photoBrowser:(SDPhotoBrowser *)browser placeholderImageForIndex:(NSInteger)index {
+    return nil;
+}
+
+
+
+-(void)conFigUI
+{
+    
+    //设置导航栏
+    [self setNavBarTitle:self.name];
+    [self addRightNavButtonWithTitle:@"全选" action:@selector(rightNavBtnClick)];
+    
+    
+    if ([_type isEqualToString:@"look"]) {
+        [self.view addSubview:self.pictureBottomView];
+        [self.pictureBottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+                if (@available(iOS 11.0, *)) {
+                    make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+                } else {
+                     make.bottom.equalTo(self.view.mas_bottom);
+                }
+            make.left.right.equalTo(self.view);
+            make.height.equalTo(@(50));
+        }];
+        [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.top.left.right.equalTo(self.view);
+            make.bottom.equalTo(self.pictureBottomView.mas_top);
+            
+        }];
+    }else if ([_type isEqualToString:@"upload"]){
+        [self.view addSubview:self.pictureCliassifyView];
+        [self.pictureCliassifyView mas_makeConstraints:^(MASConstraintMaker *make) {
+                if (@available(iOS 11.0, *)) {
+                    make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+                } else {
+                    make.bottom.equalTo(self.view.mas_bottom);
+                }
+            make.left.right.equalTo(self.view);
+            make.height.equalTo(@(50));
+        }];
+        [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.top.left.right.equalTo(self.view);
+            make.bottom.equalTo(self.pictureCliassifyView.mas_top);
+            
+        }];
+    }
+    
+    
+    [self.view addSubview:self.pictureDeleteBtn];
+    [self.pictureDeleteBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+            if (@available(iOS 11.0, *)) {
+                make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+            } else {
+                 make.bottom.equalTo(self.view.mas_bottom);
+            }
+        make.left.right.equalTo(self.view);
+        make.height.equalTo(@(50));
+    }];
+    
+    if([self isUpLoadImages] == NO){
+        self.pictureBottomView.hidden = YES;
+        [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.top.equalTo(self.view);
+            if (@available(iOS 11.0, *)) {
+                make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+            } else {
+                make.bottom.equalTo(self.view.mas_bottom);
+            }
+        }];
+    }
+
+}
+
+
+
+
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+
+//lazy
+-(LKUrlPictureViewModel *)pictureViewModel
+{
+    if (_pictureViewModel == nil) {
+        _pictureViewModel = [[LKUrlPictureViewModel alloc]init];
+    }
+    return _pictureViewModel;
+}
+
+-(LKPictureBottomView *)pictureBottomView
+{
+    if (_pictureBottomView == nil) {
+        _pictureBottomView = [[LKPictureBottomView alloc]initWithFrame:CGRectMake(0, 0, kScreen_Width, 50)];
+        WS(weakSelf)
+        _pictureBottomView.upLoadLoadClick = ^(NSString *status) {
+            //上传
+        };
+        
+        _pictureBottomView.upLoadLoadOKClick = ^(NSString *status) {
+            //上传完成
+            if([weakSelf isUpLoadImages] == NO){
+                weakSelf.pictureBottomView.hidden = YES;
+                [weakSelf.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+                    make.left.right.top.equalTo(weakSelf.view);
+                    if (@available(iOS 11.0, *)) {
+                        make.bottom.equalTo(weakSelf.view.mas_safeAreaLayoutGuide);
+                    } else {
+                        make.bottom.equalTo(weakSelf.view.mas_bottom);
+                    }
+                }];
+            }
+        };
+        _pictureBottomView.detailId = self.detailId;
+
+    }
+    return _pictureBottomView;
+}
+-(LKPictureCliassifyView *)pictureCliassifyView{
+    
+    if (_pictureCliassifyView == nil) {
+        _pictureCliassifyView = [[LKPictureCliassifyView alloc]initWithFrame:CGRectMake(0, 0, kScreen_Width, 50)];
+        WS(weakSelf)
+        _pictureCliassifyView.pictureClassifyClick = ^(NSString *status) {
+            if ([status isEqualToString:@"pictureClassify"]) {
+                
+            }else if ([status isEqualToString:@"upload"]){
+                //确定按钮
+                
+                weakSelf.pictureViewModel.sure = @"upload";
+            }
+        };
+    }
+    return _pictureCliassifyView;
+}
+
+-(UIButton *)pictureDeleteBtn
+{
+    if (_pictureDeleteBtn == nil) {
+        _pictureDeleteBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_pictureDeleteBtn setTitle:@"删除" forState:UIControlStateNormal];
+        [_pictureDeleteBtn setImage:[UIImage imageNamed:@"notes_icon_delete"] forState:UIControlStateNormal];
+        _pictureDeleteBtn.titleLabel.font = LK_10font;
+        
+        [_pictureDeleteBtn setTitleColor:[UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0] forState:UIControlStateNormal];
+        _pictureDeleteBtn.backgroundColor = [UIColor colorWithRed:247/255.0 green:247/255.0 blue:247/255.0 alpha:1/1.0];
+        
+        [_pictureDeleteBtn setTitleEdgeInsets:UIEdgeInsetsMake(25, 0, 0, 0) withImageEdgeInsets:UIEdgeInsetsMake(0, 35, 20, 0)];
+        _pictureDeleteBtn.hidden = YES;
+        
+        @weakify(self);
+        [[_pictureDeleteBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            
+            self.pictureViewModel.deleteImages = @"deleteImages";
+        }];
+    }
+    return _pictureDeleteBtn;
+}
+
+@end

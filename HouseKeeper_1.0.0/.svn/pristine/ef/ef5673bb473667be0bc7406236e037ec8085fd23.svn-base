@@ -1,0 +1,20 @@
+//
+//  LKPictureViewModel.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/13.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKBaseCollectionViewModel.h"
+
+@interface LKPictureViewModel : LKBaseCollectionViewModel
+
+@property (nonatomic, strong) NSString *categoryId;//类别ID
+
+@property (nonatomic, assign) BOOL isSelectAll;//是否选择全部
+
+@property (nonatomic, assign) NSString * sure;//确定按钮的点击
+
+
+@end

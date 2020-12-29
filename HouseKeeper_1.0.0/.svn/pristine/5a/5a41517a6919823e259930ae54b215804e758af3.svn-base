@@ -1,0 +1,87 @@
+//
+//  LKImageFileManager.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/12.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKImageFileManager.h"
+
+@implementation LKImageFileManager
+{
+    NSFileManager * fileManager;
+}
+static LKImageFileManager *manager=nil;
++(LKImageFileManager *)shareManager{
+    @synchronized(self){
+        
+        if (manager==nil) {
+            manager=[[LKImageFileManager alloc]init];
+        }
+    }
+    return manager;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        fileManager = [NSFileManager defaultManager];
+    
+        BOOL isDir = NO;
+
+        BOOL existed = [fileManager fileExistsAtPath:LKPicturePath isDirectory:&isDir];
+
+        if (!(isDir && existed)) {
+            // 在Document目录下创建一个archiver目录
+            NSError *error;
+           BOOL isCreate = [fileManager createDirectoryAtPath:LKPicturePath withIntermediateDirectories:YES attributes:nil error:&error];
+            if (isCreate) {
+                DLog(@"创建图片库成功");
+            }else{
+                DLog(@"创建图片库失败 ：%@",error.localizedDescription);
+
+            }
+            
+            
+        }
+        
+        
+    }
+    return self;
+}
+
+
+//保存图片
+-(void)saveImageToPicture:(UIImage *)image withImageName:(NSString *)imageName
+{
+    NSString * imagePath = [NSString stringWithFormat:@"%@/%@.jpg",LKPicturePath,imageName];
+    
+    BOOL saveImage = [UIImagePNGRepresentation(image) writeToFile:imagePath atomically:YES];
+    
+//    if (saveImage) {
+//        [LKCustomMethods showWindowMessage:@"图片存入本地相册成功"];
+//
+//    }else{
+//        [LKCustomMethods showWindowMessage:@"图片存入本地相册失败"];
+//
+//    }
+
+    
+}
+//删除图片
+-(void)deleteImageToPictureName:(NSString *)imageName
+{
+    NSString * imagePath = [NSString stringWithFormat:@"%@/%@.jpg",LKPicturePath,imageName];
+
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSError * error;
+    if ([fileManager removeItemAtPath:imagePath error:&error]) {
+        NSLog(@"Removed successfully");
+    }else{
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }
+}
+
+@end

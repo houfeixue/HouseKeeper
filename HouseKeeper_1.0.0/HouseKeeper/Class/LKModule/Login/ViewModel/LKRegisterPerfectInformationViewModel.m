@@ -1,0 +1,92 @@
+//
+//  LKRegisterPerfectInformationViewModel.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/19.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKRegisterPerfectInformationViewModel.h"
+
+@implementation LKRegisterPerfectInformationViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self requestData];
+        [self setUp];
+    }
+    return self;
+}
+- (void)setUp {
+    @weakify(self)
+    [[RACObserve(self, requestDict) ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+        
+    }];
+}
+- (void)requestData {
+    _enableNextSignal = [RACSignal combineLatest:@[RACObserve(self.perfectInformationModel, houseKeeperName),RACObserve(self.perfectInformationModel, idCard),RACObserve(self.perfectInformationModel, address),RACObserve(self.perfectInformationModel, identify)] reduce:^id _Nonnull(NSString *houseKeeperName, NSString *idCard, NSString *address, NSString *identify){
+        return @(houseKeeperName.length && idCard.length && address.length && identify.length);
+    }];
+    _nextBtnColorSignal = [RACSignal combineLatest:@[RACObserve(self.perfectInformationModel, houseKeeperName),RACObserve(self.perfectInformationModel, idCard),RACObserve(self.perfectInformationModel, address),RACObserve(self.perfectInformationModel, identify)] reduce:^id _Nonnull(NSString *houseKeeperName, NSString *idCard, NSString *address, NSString *identify){
+        if (houseKeeperName.length && idCard.length && address.length && identify.length) {
+            return LKBlackColor;
+        }
+        return LKDisableBtnColor;
+    }];
+    
+    @weakify(self)
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *  array) {
+        @strongify(self);
+        NSNumber *retag = [array objectAtIndex:0];
+        if ([retag isEqualToNumber:@(1)]) {/// 加载管家身份
+            NSString * requestJson = [array objectAtIndex:1];
+            NSDictionary *requestDict =  [LKCustomMethods dictionaryWithJsonString: requestJson];
+            if ([[requestDict numberForKey:@"status"] intValue] == 1) {
+                NSString *data = [LKEntcry decryptAES:[requestDict objectForKey:@"data"]];
+                id  dataArray = [LKCustomMethods arrayWithJsonString:data];
+                if (dataArray != nil && [dataArray isKindOfClass:[NSArray class]]) {
+                    NSArray *roleArray = [LKRegisterHouseKeeperIdentifyModel mj_objectArrayWithKeyValuesArray:(NSArray *)dataArray];
+                    [self.loadRoleDataSubject sendNext:roleArray];
+                }
+            }else {
+                [LKCustomMethods showWindowMessage:[requestDict stringForKey:@"msg"]];
+            }
+        }else {
+            NSString * requestJson = [array objectAtIndex:1];
+            NSDictionary *requestDict =  [LKCustomMethods dictionaryWithJsonString: requestJson];
+            if ([[requestDict numberForKey:@"status"] intValue] == 1) {
+                [self.auditSuccessSubject sendNext:nil];
+            }else {
+                [LKCustomMethods showWindowMessage:[requestDict stringForKey:@"msg"]];
+            }
+        }
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray * array) {
+        NSError *error = [array objectAtIndex:1];
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }];
+}
+
+- (LKRegisterPerfectInformationModel *)perfectInformationModel {
+    if (_perfectInformationModel == nil) {
+        _perfectInformationModel = [[LKRegisterPerfectInformationModel alloc] init];
+    }
+    return _perfectInformationModel;
+}
+- (RACSubject *)loadRoleDataSubject {
+    if (_loadRoleDataSubject == nil) {
+        _loadRoleDataSubject = [RACSubject subject];
+    }
+    return _loadRoleDataSubject;
+}
+- (RACSubject *)auditSuccessSubject {
+    if (_auditSuccessSubject == nil) {
+        _auditSuccessSubject = [RACSubject subject];
+    }
+    return _auditSuccessSubject;
+}
+@end

@@ -1,0 +1,138 @@
+//
+//  LKPictureCell.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/13.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKLookPictureCell.h"
+#import "LKPictureSelectModel.h"
+#import "LKUrlPictureModel.h"
+#import "LKQualityDetailModel.h"
+#import "LKLookPicCategoryModel.h"
+@implementation LKLookPictureCell
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self _setupViews];
+    }
+    return self;
+}
+
+- (void)_setupViews
+{
+    
+    [self.contentView addSubview:self.picImageView];
+    [self.contentView addSubview:self.selectBtn];
+    
+    
+    CGFloat width = ((kScreen_Width-80-10 +LKRightMargin)-2*6)/3;
+    
+    [self.picImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.equalTo(self.contentView);
+        make.width.height.equalTo(@(width));
+        
+    }];
+    [self.selectBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.contentView).offset(-10);
+        make.top.equalTo(self.contentView).offset(10);
+        make.width.height.equalTo(@(22));
+    }];
+    
+    
+}
+
+-(void)conFigCellwithData:(id)data atIndex:(NSIndexPath *)indexPath
+{
+    if ([data isKindOfClass:[LKPictureModel class]]) {
+        LKPictureModel *model = (LKPictureModel *)data;
+        
+        
+        if (model.isSelect) {
+            [self.selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_selected"] forState:UIControlStateNormal];
+
+        }else{
+            
+             [self.selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_default"] forState:UIControlStateNormal];
+        }
+        
+        NSString * imagePath = [NSString stringWithFormat:@"%@/%@",LKShrinkPicturePath,model.picName];
+
+        [_picImageView yy_setImageWithURL:[NSURL fileURLWithPath:imagePath] placeholder:[UIImage imageNamed:LKPicture_Default]];
+
+        
+    }else if ([data isKindOfClass:[LKUrlPictureModel class]]){
+        LKUrlPictureModel *model = (LKUrlPictureModel *)data;
+        if (model.isSelect) {
+            [self.selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_selected"] forState:UIControlStateNormal];
+            
+        }else{
+            
+            [self.selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_default"] forState:UIControlStateNormal];
+        }
+        
+     
+        NSString * imagePath = [NSString stringWithFormat:@"%@%@",LKIconHost,model.url];
+
+        [_picImageView yy_setImageWithURL:[NSURL URLWithString:imagePath] placeholder:[UIImage imageNamed:LKPicture_Default]];
+        
+    }else if ([data isKindOfClass:[LKQualityDetailImageInfoModel class]]){
+        
+        LKQualityDetailImageInfoModel *model = (LKQualityDetailImageInfoModel *)data;
+        NSString * imagePath = [NSString stringWithFormat:@"%@%@%@",LKIconHost,model.url,LKNetShrinkPic_Default];
+        
+        [_picImageView yy_setImageWithURL:[NSURL URLWithString:imagePath] placeholder:[UIImage imageNamed:LKPicture_Default]];
+    }else if ([data isKindOfClass:[LKLookPicModel class]]){
+        LKLookPicModel *model = (LKLookPicModel *)data;
+        NSString * imagePath = [NSString stringWithFormat:@"%@%@%@",LKIconHost,model.url,LKNetShrinkPic_Default];
+        [_picImageView yy_setImageWithURL:[NSURL URLWithString:imagePath] placeholder:[UIImage imageNamed:LKPicture_Default]];
+    }
+}
+
+//lazy
+-(UIImageView *)picImageView
+{
+    if (_picImageView == nil) {
+        _picImageView = [[UIImageView alloc]init];
+//        _picImageView.layer.masksToBounds = YES;
+        [_picImageView setContentMode:UIViewContentModeScaleToFill];
+        
+        _picImageView.userInteractionEnabled = YES;
+        UILongPressGestureRecognizer * press = [[UILongPressGestureRecognizer alloc]init];
+        press.minimumPressDuration = 1;
+        [_picImageView addGestureRecognizer:press];
+        @weakify(self);
+        [[press rac_gestureSignal] subscribeNext:^(__kindof UILongPressGestureRecognizer * _Nullable longPress) {
+            @strongify(self);
+            if (longPress.state == UIGestureRecognizerStateBegan ) {
+                if (self.pictureLongPressClick) {
+                    self.pictureLongPressClick(@"");
+                }
+            }
+        }];
+    }
+    return _picImageView;
+}
+
+-(UIButton *)selectBtn
+{
+    if (_selectBtn == nil) {
+        _selectBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_default"] forState:UIControlStateNormal];
+        _selectBtn.hidden = YES;
+        @weakify(self)
+
+        [[_selectBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            if (self.pictureSelectBtnClick) {
+                self.pictureSelectBtnClick(@"");
+            }
+            
+        }];
+        
+    }
+    return _selectBtn;
+}
+
+@end

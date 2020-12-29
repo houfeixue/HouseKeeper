@@ -1,0 +1,98 @@
+//
+//  LKLoginViewModel.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/18.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKLoginViewModel.h"
+
+@implementation LKLoginViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self requestData];
+        [self setUp];
+    }
+    return self;
+}
+- (void) setUp {
+    @weakify(self)
+    [[RACObserve(self, requestDict) ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+    }];
+}
+- (void)requestData {
+    _enableLoginSignal = [RACSignal combineLatest:@[RACObserve(self.loginModel, userName),RACObserve(self.loginModel, password)] reduce:^id _Nonnull(NSString *userName, NSString *password){
+        if (self.loginModel.isQuickLogin) {
+            return @(userName.length && password.length >= 4);
+        }else
+        return @(userName.length && password.length);
+    }];
+    _loginBtnColorSignal = [RACSignal combineLatest:@[RACObserve(self.loginModel, userName),RACObserve(self.loginModel, password)] reduce:^id _Nonnull(NSString *userName, NSString *password){
+        if (self.loginModel.isQuickLogin) {
+            if (userName.length && password.length >= 4) {
+                return LKBlackColor;
+            }
+            return LKDisableBtnColor;
+        }else {
+            if (userName.length && password.length) {
+                return LKBlackColor;
+            }
+            return LKDisableBtnColor;
+        }
+    }];
+    @weakify(self)
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *resultArray) {
+        NSNumber *tag = [resultArray objectAtIndex:0];
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:[resultArray objectAtIndex:1]];
+        int successResult = [[requestJson numberForKey:@"status"] intValue];
+        if ( successResult == 1) {
+            if ([tag isEqualToNumber:@(3)]) { /// 验证码获取
+                [LKCustomMethods showWindowMessage:@"验证码已发送"];
+                [self.verifyCodeSuccessSubject sendNext:nil];
+            }else {
+                NSString * data = [LKEntcry decryptAES:[requestJson objectForKey:@"data"]];
+                id  dataDict = [LKCustomMethods dictionaryWithJsonString:data];
+                if (dataDict != nil && [dataDict isKindOfClass:[NSDictionary class]]) {
+                    @strongify(self);
+                        LKUserInfoModel * model = [LKUserInfoModel mj_objectWithKeyValues:(NSDictionary *)dataDict];
+                        [LKCustomMethods saveUserInfo:model];
+                        [self.loginSuccessSubject sendNext:model];
+                }else {
+                    [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+                }
+            }
+        }else {
+            [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+        }
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray *errorArray) {
+        NSError *error = [errorArray objectAtIndex:1];
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }];
+}
+
+- (LKLoginModel *)loginModel {
+    if (_loginModel == nil) {
+        _loginModel = [[LKLoginModel alloc] init];
+    }
+    return _loginModel;
+}
+- (RACSubject *)loginSuccessSubject {
+    if (_loginSuccessSubject == nil) {
+        _loginSuccessSubject = [RACSubject subject];
+    }
+    return _loginSuccessSubject;
+}
+- (RACSubject *)verifyCodeSuccessSubject {
+    if (_verifyCodeSuccessSubject == nil) {
+        _verifyCodeSuccessSubject = [RACSubject subject];
+    }
+    return _verifyCodeSuccessSubject;
+}
+@end

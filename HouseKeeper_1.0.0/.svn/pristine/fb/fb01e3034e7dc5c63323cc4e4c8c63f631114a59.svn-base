@@ -1,0 +1,79 @@
+//
+//  LKAddWorkRecordViewModel.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/31.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddWorkRecordViewModel.h"
+
+@implementation LKAddWorkRecordViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self initBindData];
+    }
+    return self;
+}
+- (void)initBindData {
+    @weakify(self);
+    [[RACObserve(self, requestDict) ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self);
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+        
+    }];
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *resultArray) {
+        @strongify(self);
+        NSNumber *tag = [resultArray objectAtIndex:0];
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:[resultArray objectAtIndex:1]];
+        int successResult = [[requestJson numberForKey:@"status"] intValue];
+        if ( successResult == 1) {
+            if ([tag isEqualToNumber:@(1)]) { /// 增加
+                [self.addWorkRecordSubject sendNext:nil];
+            }else if ([tag isEqualToNumber:@(2)]) {  ///修改
+                [self.updateWorkRecordSubject sendNext:nil];
+
+//                NSString * data = [LKEntcry decryptAES:[requestJson objectForKey:@"data"]];
+//                id  dataDict = [LKCustomMethods dictionaryWithJsonString:data];
+//                if (dataDict != nil && [dataDict isKindOfClass:[NSDictionary class]]) {
+//                    @strongify(self);
+//
+//                }else {
+//                    [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+//                }
+            }else if ([tag isEqualToNumber:@(3)]) { ///删除
+                [self.deleteWorkRecordSubject sendNext:nil];
+            }            
+        }else {
+            [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+        }
+        
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray *errorArray) {
+        NSError *error = [errorArray objectAtIndex:1];
+        NSLog(@"%@",error.localizedDescription);
+    }];
+}
+
+- (RACSubject *)addWorkRecordSubject {
+    if (_addWorkRecordSubject == nil) {
+        _addWorkRecordSubject = [RACSubject subject];
+    }
+    return _addWorkRecordSubject;
+}
+- (RACSubject *)deleteWorkRecordSubject {
+    if (_deleteWorkRecordSubject == nil) {
+        _deleteWorkRecordSubject = [RACSubject subject];
+    }
+    return _deleteWorkRecordSubject;
+}
+- (RACSubject *)updateWorkRecordSubject {
+    if (_updateWorkRecordSubject == nil) {
+        _updateWorkRecordSubject = [RACSubject subject];
+    }
+    return _updateWorkRecordSubject;
+}
+@end

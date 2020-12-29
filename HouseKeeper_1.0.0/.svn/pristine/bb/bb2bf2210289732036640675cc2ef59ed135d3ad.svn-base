@@ -1,0 +1,179 @@
+//
+//  LKImageFileManager.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/12.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKImageFileManager.h"
+#import "LKMergeView.h"
+
+typedef void(^LKImageFileManagerMergeImage)(UIImage *);
+@interface LKImageFileManager()
+@property (nonatomic, strong) LKMergeView *mergeView;
+@end
+
+@implementation LKImageFileManager
+{
+    NSFileManager * fileManager;
+}
+static LKImageFileManager *manager=nil;
++(LKImageFileManager *)shareManager{
+    @synchronized(self){
+        
+        if (manager==nil) {
+            manager=[[LKImageFileManager alloc]init];
+        }
+    }
+    return manager;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreen_Width, 2 * kScreen_Height)];
+        [view addSubview:self.mergeView];
+        [self.mergeView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.mas_equalTo(20000);
+            make.left.mas_equalTo(0);
+            make.width.mas_equalTo(kScreen_Width);
+        }];
+        fileManager = [NSFileManager defaultManager];
+    
+        BOOL isDir = NO;
+
+        BOOL existed = [fileManager fileExistsAtPath:LKShrinkPicturePath isDirectory:&isDir];
+
+        if (!(isDir && existed)) {
+            // 在Document目录下创建一个archiver目录
+            NSError *error;
+           BOOL isCreate = [fileManager createDirectoryAtPath:LKPicturePath withIntermediateDirectories:YES attributes:nil error:&error];
+            [fileManager createDirectoryAtPath:LKShrinkPicturePath withIntermediateDirectories:YES attributes:nil error:&error];
+            [fileManager createDirectoryAtPath:LKCompoundPicturePath withIntermediateDirectories:YES attributes:nil error:&error];
+            if (isCreate) {
+                DLog(@"创建图片库成功");
+            }else{
+                DLog(@"创建图片库失败 ：%@",error.localizedDescription);
+
+            }
+        
+        }
+    
+    }
+    return self;
+}
+
+
+//保存图片
+-(void)saveImageToPicture:(UIImage *)image withImageName:(NSString *)imageName mergeModel:(LKPictureModel *)pictureModel
+{
+    NSString * imagePath = [NSString stringWithFormat:@"%@/%@.jpg",LKPicturePath,imageName];
+    NSString * shrinkPicturePath = [NSString stringWithFormat:@"%@/%@.jpg",LKShrinkPicturePath,imageName];
+    NSString * compoundPicturePath = [NSString stringWithFormat:@"%@/%@.jpg",LKCompoundPicturePath,imageName];
+
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        
+        
+        UIImage * newImage = [self zipScaleWithImage:image];
+        
+        [UIImageJPEGRepresentation(newImage, 0.2) writeToFile:shrinkPicturePath atomically:YES];
+        [UIImageJPEGRepresentation(image, 0.2) writeToFile:imagePath atomically:YES];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            
+            UIImage *mergeImage =  [self mergePicture:pictureModel originImage:image];
+            
+            dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                [UIImageJPEGRepresentation(mergeImage, 0.2) writeToFile:compoundPicturePath atomically:YES];
+
+            });
+        });
+        
+    });
+    
+//    if (saveImage) {
+//        [LKCustomMethods showWindowMessage:@"图片存入本地相册成功"];
+//
+//    }else{
+//        [LKCustomMethods showWindowMessage:@"图片存入本地相册失败"];
+//
+//    }
+
+    
+}
+
+
+-(UIImage *)zipScaleWithImage:(UIImage *)sourceImage{
+    //进行图像尺寸的压缩
+    CGSize imageSize = sourceImage.size;//取出要压缩的image尺寸
+    CGFloat width = imageSize.width;    //图片宽度
+    CGFloat height = imageSize.height;  //图片高度
+   
+    //进行尺寸重绘
+    UIGraphicsBeginImageContext(CGSizeMake(kScreen_Width/3, kScreen_Width/3));
+    [sourceImage drawInRect:CGRectMake(0,0,kScreen_Width/3,kScreen_Width/3)];
+    UIImage* newImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return newImage;
+}
+
+
+
+
+//删除图片
+-(void)deleteImageToPictureName:(NSString *)imageName
+{
+    NSString * imagePath = [NSString stringWithFormat:@"%@/%@.jpg",LKPicturePath,imageName];
+    
+    NSString * shrinkPicturePath = [NSString stringWithFormat:@"%@/%@.jpg",LKShrinkPicturePath,imageName];
+    NSString * compoundPicturePath = [NSString stringWithFormat:@"%@/%@.jpg",LKCompoundPicturePath,imageName];
+
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSError * error;
+    if ([fileManager removeItemAtPath:imagePath error:&error]) {
+        NSLog(@"Removed successfully");
+    }else{
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }
+    
+    if ([fileManager removeItemAtPath:shrinkPicturePath error:&error]) {
+        NSLog(@"Removed successfully");
+    }else{
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }
+    
+    
+    if ([fileManager removeItemAtPath:compoundPicturePath error:&error]) {
+        NSLog(@"Removed successfully");
+    }else{
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }
+    
+}
+
+//合成图片
+
+- (UIImage *)mergePicture:(LKPictureModel *)pictureModel originImage:(UIImage *)originImage{
+    /** 合成图片 */
+    self.mergeView.locationLabel.text = pictureModel.area;
+    self.mergeView.tipLabel.text = pictureModel.des;
+    self.mergeView.timeLabel.text = [LKCustomMethods timeStrFormTime:[pictureModel.time longLongValue] withFormatter:@"YYYY年MM月dd日 HH:mm:ss"];
+    [self.mergeView layoutIfNeeded];
+    UIImage *extraImage = [LKCustomTool makeImageWithView:self.mergeView.extraView withSize:self.mergeView.extraView.size];
+    if (originImage == nil) {
+        return nil;
+    }
+    UIImage *mergeImage = [LKCustomTool composeImageOnMainImage:originImage mainImageViewFrame:self.mergeView.frame subImageArray:@[extraImage] subImageFrameArray:@[NSStringFromCGRect(CGRectMake(0, self.mergeView.mergeImageView.height - extraImage.size.height, self.mergeView.mergeImageView.width, extraImage.size.height))]];
+    
+    return mergeImage;
+}
+- (LKMergeView *)mergeView {
+    if (_mergeView == nil) {
+        _mergeView = [[LKMergeView alloc]init];
+    }
+    return _mergeView;
+}
+
+@end

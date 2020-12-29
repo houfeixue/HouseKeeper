@@ -1,0 +1,240 @@
+//
+//  LKSearchCommunityViewModel.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/19.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKSearchCommunityViewModel.h"
+
+@interface LKSearchCommunityViewModel()
+
+@end
+
+@implementation LKSearchCommunityViewModel
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _selectCommunityArray = [NSMutableArray array];
+        
+        [self setUp];
+        [self requestData];
+    }
+    return self;
+}
+
+-(void)setUp{
+    _selectCommunitySubject = [RACSubject subject];
+    @weakify(self)
+    [[RACObserve(self,requestDict)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+    }];
+}
+
+-(void)requestData{
+
+    @weakify(self)
+
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *  array) {
+        
+        NSNumber *retag = [array objectAtIndex:0];
+        NSString * requestJson = [array objectAtIndex:1];
+        NSLog(@"请求接口完成- --%@ ---%@ : %@",retag,self.requestDict,requestJson);
+        @strongify(self);
+        if ([retag integerValue] == 1) {
+            //城市
+            NSDictionary *requestDict =  [LKCustomMethods dictionaryWithJsonString: requestJson];
+            
+            if ([[requestDict numberForKey:@"status"] intValue] == 1) {
+            
+                NSArray *dataArray =  [LKCustomMethods arrayWithJsonString:[LKEntcry decryptAES:[requestDict objectForKey:@"data"]]];
+                
+                self.cityArray = [LKCityModel mj_objectArrayWithKeyValuesArray:dataArray];
+                
+//                NSMutableDictionary * clickdict = [[NSMutableDictionary alloc]init];
+//                [clickdict setObject:@"cityList" forKey:@"key"];
+//                [clickdict setObject:self.cityArray forKey:@"data"];
+//                [self.cellClickSubject sendNext:clickdict];
+                
+                LKCityModel * model = [[LKCityModel alloc] init];
+                model.cityId = @(0);
+                model.name = @"不限";
+                model.isSelected = YES;
+                [self.cityArray insertObject:model atIndex:0];
+                //请求小区数据
+                self.requestUrl = LKBrunchList;
+                self.requestTag = 2;
+                NSMutableDictionary * brunchDict = [[NSMutableDictionary alloc]init];
+                [brunchDict setObject:@"" forKey:@"name"];
+                [brunchDict setObject:@"" forKey:@"regionId"];
+           
+                [self.selectCitySubject sendNext:model];
+                self.requestDict = brunchDict;
+                
+            }else{
+                [LKCustomMethods showWindowMessage:[requestDict  stringForKey:@"msg"] ];
+            }
+        }else if ([retag integerValue] == 2){
+            //小区列表
+            
+            NSDictionary *requestDict =  [LKCustomMethods dictionaryWithJsonString: requestJson];
+            if ([[requestDict numberForKey:@"status"] intValue] == 1) {
+                NSString *data = [LKEntcry decryptAES:[requestDict objectForKey:@"data"]];
+                id  dataArray = [LKCustomMethods arrayWithJsonString:data];
+                if (dataArray != nil && [dataArray isKindOfClass:[NSArray class]]) {
+                    @strongify(self);
+                     NSArray<LKSearchCommunityListModel *> *tableViewDataSource = [LKSearchCommunityListModel mj_objectArrayWithKeyValuesArray:(NSArray *)dataArray];
+                    NSMutableArray *tempArray = [NSMutableArray array];
+                    for (LKSearchCommunityListModel * object in tableViewDataSource) {
+                        LKTableSectionObject * sectionObject = [[LKTableSectionObject alloc]init];
+                        sectionObject.sectionKey = object.alpha;
+                        sectionObject.itemArray = object.communitys.mutableCopy;
+                        [tempArray addObject:sectionObject];
+                    }
+                    self.dataArray = tempArray;
+                    [self.loadDataSubject sendNext:nil];
+                }else {
+                    [LKCustomMethods showWindowMessage:[requestDict objectForKey:@"msg"]];
+                }
+            }else{
+                [LKCustomMethods showWindowMessage:[requestDict  stringForKey:@"msg"] ];
+            }
+        }
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray * array) {
+        NSNumber *retag = [array objectAtIndex:0];
+        NSError * error = [array objectAtIndex:1];
+        NSLog(@"error : %@,%@",retag,error.localizedDescription);
+    }];
+    
+}
+- (void)changeSelectDataArray:(NSMutableArray *)currentSelectArray {
+    self.selectCommunityArray = currentSelectArray;
+    for (NSInteger i = 0; i<self.dataArray.count; i++) {
+        LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:i];
+        for (NSInteger index = 0; index < sectionObject.itemArray.count; index ++ ) {
+            LKSearchCommunityModel *communityModel = [sectionObject.itemArray objectAtIndex:index];
+            communityModel.selected = NO;
+            for (LKSearchCommunityModel *selectCommunityModel in currentSelectArray) {
+                if (communityModel.communityId == selectCommunityModel.communityId) {
+                    communityModel.selected = YES;
+                    break;
+                }
+            }
+            [sectionObject.itemArray replaceObjectAtIndex:index withObject:communityModel];
+            
+        }
+        [self.dataArray replaceObjectAtIndex:i withObject:sectionObject];
+    }
+    [self.changeDataSubject sendNext:nil];
+}
+#pragma mark table -delegate
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:section];
+    return sectionObject.itemArray.count;
+}
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreen_Width, 30)];
+    headerView.backgroundColor = LKDisableGrayColor;
+    UILabel *label= [[UILabel alloc] initWithFrame:CGRectMake(LKLeftMargin, 0, kScreen_Width - 2 * LKLeftMargin, 30)];
+    LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:section];
+    label.text = sectionObject.sectionKey;
+    label.textColor = LKGrayColor;
+    label.font = LK_13font;
+    [headerView addSubview:label];
+    return headerView;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 30;
+}
+
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+
+    LKSearchCommunityCell *cell = [LKSearchCommunityCell cellForTableView:tableView reuseIdentifier:@"LKSearchCommunityCell"];
+    LKTableSectionObject * sectionObject = [self.dataArray objectAtIndex:indexPath.section];
+    [cell conFigCellwithData:sectionObject.itemArray[indexPath.row] atIndex:indexPath];
+    @weakify(self);
+    cell.selectBtnChangeStatus = ^(LKSearchCommunityModel *communityModel) {
+        @strongify(self);
+        [sectionObject.itemArray replaceObjectAtIndex:indexPath.row withObject:communityModel];
+        [self.dataArray replaceObjectAtIndex:indexPath.section withObject:sectionObject];
+//        [self.selectCommunityArray removeAllObjects];
+        
+        BOOL isHaveAddSelected = NO;
+        for (LKSearchCommunityModel *tempMdoel in self.selectCommunityArray) {
+            if (communityModel.communityId == tempMdoel.communityId) {
+                if (communityModel.selected == NO ) {
+                    [self.selectCommunityArray removeObject:tempMdoel];
+                }else {
+                    [self.selectCommunityArray addObject:communityModel];
+                }
+                isHaveAddSelected = YES;
+                break;
+            }
+        }
+        if (isHaveAddSelected == NO) {
+            [self.selectCommunityArray addObject:communityModel];
+        }
+        
+//        for (NSInteger i = 0; i < self.dataArray.count; i ++ ) {
+//            LKTableSectionObject *sectionObject = [self.dataArray objectAtIndex:i];
+//            for (NSInteger j = 0; j < sectionObject.itemArray.count; j++) {
+//                LKSearchCommunityModel *model = [sectionObject.itemArray objectAtIndex:j];
+//                if (model.selected == YES) {
+//                    [self.selectCommunityArray addObject:model];
+//                }
+//            }
+//        }
+        [self.selectCommunitySubject sendNext:self.selectCommunityArray];
+    };
+    return cell;
+
+}
+
+//-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+//{
+//    LKTableSectionObject * section = [self.dataArray objectAtIndex:indexPath.section];
+//    id model = [section.itemArray objectAtIndex:indexPath.row];
+//
+////    [self.cellClickSubject sendNext:model];
+//    
+//    [self.cellClickSubject sendNext:@"reload"];
+//
+//}
+
+
+//lazy
+-(NSMutableArray *)cityArray
+{
+    if (_cityArray == nil) {
+        _cityArray = [[NSMutableArray alloc]init];
+    }
+    return _cityArray;
+}
+- (RACSubject *)loadDataSubject {
+    if (_loadDataSubject == nil) {
+        _loadDataSubject = [RACSubject subject];
+    }
+    return _loadDataSubject;
+}
+- (RACSubject *)changeDataSubject {
+    if (_changeDataSubject == nil) {
+        _changeDataSubject = [RACSubject subject];
+    }
+    return _changeDataSubject;
+}
+- (RACSubject *)selectCitySubject {
+    if (_selectCitySubject == nil) {
+        _selectCitySubject = [RACSubject subject];
+    }
+    return _selectCitySubject;
+}
+@end

@@ -1,0 +1,18 @@
+//
+//  LKSelectListView.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+typedef void(^SelectListClick)(LKAlumbModel * model);
+
+@interface LKSelectClassityListView : UIView<UITableViewDelegate,UITableViewDataSource>
+
+@property(nonatomic,strong)UITableView * tableView;
+@property(nonatomic,copy)SelectListClick selectListClick;
+@property(nonatomic,strong)NSMutableArray *  dataArray;
+
+@end

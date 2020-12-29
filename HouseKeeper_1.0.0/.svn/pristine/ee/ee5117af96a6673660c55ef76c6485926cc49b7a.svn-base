@@ -1,0 +1,185 @@
+//
+//  LKPictureHandleVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPictureHandleVC.h"
+#import "LKMergeView.h"
+#import "LKPictureHandleBottomView.h"
+#import "LKLocationManager.h"
+
+@interface LKPictureHandleVC ()<UITextViewDelegate>
+@property (nonatomic, strong) UIScrollView *bgScrollView;
+@property (nonatomic, strong) UIImageView *pictureImageView;
+@property (nonatomic, strong) UITapGestureRecognizer *tapGesture;
+
+@property (nonatomic, strong) LKPictureHandleBottomView *bottomView;
+
+/** 合同图片view */
+@property (nonatomic, strong) LKMergeView *mergeView;
+@property (nonatomic, strong) UIImage *currentSelectPictureImage;
+
+@property (nonatomic, strong) UITextView *inputTextView;
+
+/** 当前定位位置 */
+@property (nonatomic, copy)__block NSString *currentLocation;
+@property (nonatomic, strong)__block UIImage *currentSelectImage;
+@property (nonatomic, copy)__block NSString *currentTime;
+
+@end
+
+@implementation LKPictureHandleVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    /** 拍照完成通知 */
+    [[[NSNotificationCenter defaultCenter] rac_addObserverForName:LKTakePhotoSucessNotiation object:nil] subscribeNext:^(NSNotification * _Nullable x) {
+        NSMutableDictionary *dict = x.object;
+        self.currentSelectImage = [dict objectForKey:@"currentImage"];
+        self.currentTime = [dict objectForKey:@"currentTime"];
+        self.pictureImageView.image = self.currentSelectImage;
+    }];
+    [self createUI];
+    [self getCurrentLocation:NO];
+}
+- (void)getCurrentLocation:(BOOL)isRepeat {
+    @weakify(self);
+    [LKLocationManager getResposeLocation:^(LKLocationModel *locationModel) {
+        @strongify(self);
+        if (locationModel == nil) {
+            @weakify(self);
+            if (isRepeat) {
+                [Dialog showCustomAlertViewWithTitle:@"温馨提示" message:@"请确定重新定位打开，再次定位" firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+                    @strongify(self);
+                    if (index == 1) {
+                        [self getCurrentLocation:isRepeat];
+                    }
+                }];
+            }
+        }else {
+            DLog(@"地点 ：  %@",locationModel.name);
+            self.currentLocation = locationModel.name;
+        }
+    }];
+}
+- (void)createUI {
+    
+    [self addRightNavButtonWithTitle:@"保存" action:@selector(savePicture)];
+    [self.view addSubview:self.bgScrollView];
+    [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    [self.bgScrollView addSubview:self.pictureImageView];
+    [self.pictureImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.right.equalTo(self.bgScrollView);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(kScreen_Height - kStatusBarHeight - kNavBarHeight - 130);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(130);
+    }];
+    [self.pictureImageView addGestureRecognizer:self.tapGesture];
+    [self createMergeView];
+    [self createBottomView];
+}
+- (void)createBottomView {
+    [self.bgScrollView addSubview:self.bottomView];
+    [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.width.mas_equalTo(kScreen_Width);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom);
+    }];
+    self.bottomView.selectPictureType = ^{
+        DLog(@"选择类型");
+    };
+}
+- (void)createMergeView{
+    [self.view addSubview:self.mergeView];
+    [self.mergeView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.view.mas_bottom).offset(2000);
+        make.left.right.equalTo(self.view);
+    }];
+    self.mergeView.tipLabel.text = @"阿萨德绿军奥奥所大所多多多所多多所多所多多所所多所大奥多所多所多所多所所大所多撒多多撒所多所大所多所多多所多";
+    self.mergeView.locationLabel.text = @"北京市朝阳区西大望路88号SOHO现代城";
+    self.mergeView.timeLabel.text = @"2018-07-25";
+}
+- (void)createTextView {
+    [self.view addSubview:self.inputTextView];
+    [self.inputTextView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(LKLeftMargin);
+        make.right.equalTo(self.view.mas_right).inset(LKLeftMargin);
+        make.height.mas_equalTo(100);
+        make.top.equalTo(self.pictureImageView.mas_bottom).offset(30);
+    }];
+}
+
+#pragma mark - btnClick
+/** 保存图片 */
+- (void)savePicture {
+    
+    /** 保存图片  图片-时间-定位 -   描述（选填） */
+    /** 1.定位 */
+    if ([LKCustomTool isBlankString:self.currentLocation] == YES) {
+        [self getCurrentLocation:YES];
+        return;
+    }
+    /**
+     *   self.currentSelectImage    图片
+     *   self.currentTime;          时间
+     */
+    
+//    /** 合成图片 */
+//    self.mergeView.locationLabel.text = @"北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室";
+//    self.mergeView.tipLabel.text = self.inputTextView.text;
+//    [self.mergeView layoutIfNeeded];
+//    [self.view layoutIfNeeded];
+//    UIImage *mergeImage = [LKCustomTool makeImageWithView:self.mergeView withSize:self.mergeView.size];
+//    self.pictureImageView.image = [LKCustomTool composeImageOnMainImage:self.currentSelectPictureImage mainImageViewFrame:self.pictureImageView.frame subImageArray:@[mergeImage] subImageFrameArray:@[NSStringFromCGRect(CGRectMake(0, self.pictureImageView.height - mergeImage.size.height, self.pictureImageView.width, mergeImage.size.height))]];
+}
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [self.view endEditing:YES];
+}
+#pragma mark - lazy
+- (UIImageView *)pictureImageView {
+    if (_pictureImageView == nil) {
+        _pictureImageView = [[UIImageView alloc] init];
+        _pictureImageView.contentMode = UIViewContentModeScaleAspectFit;
+        _pictureImageView.userInteractionEnabled = YES;
+        _pictureImageView.backgroundColor = LKF2Color;
+    }
+    return _pictureImageView;
+}
+- (LKPictureHandleBottomView *)bottomView {
+    if (_bottomView == nil) {
+        _bottomView = [[LKPictureHandleBottomView alloc] init];
+    }
+    return _bottomView;
+}
+- (UITapGestureRecognizer *)tapGesture {
+    if (_tapGesture == nil) {
+        _tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(takePhoto)];
+    }
+    return _tapGesture;
+}
+- (LKMergeView *)mergeView {
+    if (_mergeView == nil) {
+        _mergeView = [[LKMergeView alloc] init];
+    }
+    return _mergeView;
+}
+- (UITextView *)inputTextView {
+    if (_inputTextView == nil) {
+        _inputTextView = [[UITextView alloc] init];
+    }
+    return _inputTextView;
+}
+- (UIScrollView *)bgScrollView {
+    if (_bgScrollView == nil) {
+        _bgScrollView = [[UIScrollView alloc] init];
+    }
+    return _bgScrollView;
+}
+@end

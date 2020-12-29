@@ -1,0 +1,82 @@
+//
+//  LKForgetPasswordViewModel.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/20.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKForgetPasswordViewModel.h"
+
+@implementation LKForgetPasswordViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self requestData];
+        [self setUp];
+    }
+    return self;
+}
+- (void)setUp{
+    @weakify(self)
+    [[RACObserve(self, requestDict) ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Post withTag:self.requestTag];
+        
+    }];
+}
+- (void)requestData {
+    _enableNextSignal = [RACSignal combineLatest:@[RACObserve(self.forgetPasswordModel, userName),RACObserve(self.forgetPasswordModel, verifyCode)] reduce:^id _Nonnull(NSString *userName, NSString *verifyCode){
+        return @(userName.length && verifyCode.length >= 4);
+    }];
+    _nextBtnColorSignal = [RACSignal combineLatest:@[RACObserve(self.forgetPasswordModel, userName),RACObserve(self.forgetPasswordModel, verifyCode)] reduce:^id _Nonnull(NSString *userName, NSString *verifyCode){
+        if (userName.length && verifyCode.length >= 4) {
+            return LKBlackColor;
+        }
+        return LKDisableBtnColor;
+    }];
+    @weakify(self)
+    [self.requestViewModelOKSubject subscribeNext:^(NSArray *resultArray) {
+        @strongify(self);
+        NSNumber *tag = [resultArray objectAtIndex:0];
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:[resultArray objectAtIndex:1]];
+        int successResult = [[requestJson objectForKey:@"status"] intValue];
+        if ( successResult == 1) {
+            if ([tag isEqualToNumber: @(1)]) { /// 发送验证码
+                [LKCustomMethods showWindowMessage:@"验证码已发送"];
+                [self.verifyCodeSendSuccessSubject sendNext:nil];
+            }else if ([tag isEqualToNumber:@(2)]) { /// 验证验证码
+                [self.verifySuccessSubject sendNext:nil];
+            }
+        }else {
+            [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+        }
+        
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSArray *errorArray) {
+        NSError *error = [errorArray objectAtIndex:1];
+        [LKCustomMethods showWindowMessage:error.localizedDescription];
+    }];
+}
+
+- (LKForgetPasswordModel *)forgetPasswordModel {
+    if (_forgetPasswordModel == nil) {
+        _forgetPasswordModel = [[LKForgetPasswordModel alloc] init];
+    }
+    return _forgetPasswordModel;
+}
+- (RACSubject *)verifyCodeSendSuccessSubject {
+    if (_verifyCodeSendSuccessSubject == nil) {
+        _verifyCodeSendSuccessSubject = [RACSubject subject];
+    }
+    return _verifyCodeSendSuccessSubject;
+}
+- (RACSubject *)verifySuccessSubject {
+    if (_verifySuccessSubject == nil) {
+        _verifySuccessSubject = [RACSubject subject];
+    }
+    return _verifySuccessSubject;
+}
+@end

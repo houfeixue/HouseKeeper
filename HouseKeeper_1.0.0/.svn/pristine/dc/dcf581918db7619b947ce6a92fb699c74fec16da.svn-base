@@ -1,0 +1,14 @@
+//
+//  LKChatDetailVc.h
+//  HouseKeeper
+//
+//  Created by Lin Hu on 2018/8/3.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKBaseTableViewController.h"
+#import "SDChat.h"
+
+@interface LKChatDetailVc : LKBaseTableViewController
+@property (nonatomic,strong)SDChat *chat;
+@end

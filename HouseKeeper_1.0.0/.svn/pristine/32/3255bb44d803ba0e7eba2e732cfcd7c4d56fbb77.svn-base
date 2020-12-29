@@ -1,0 +1,435 @@
+//
+//  LKAddWorkRecordVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/30.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddWorkRecordVC.h"
+#import "LKAddWorkDescriptionItemView.h"
+//#import "LKAddWorkAddressItemView.h"
+#import "LKAddPictureItemView.h"
+#import "LKAddWorkRecordBottomView.h"
+#import "THPickerView.h"
+#import "LKLocationManager.h"
+#import "LKWorkRecordListModel.h"
+#import "LKAddWorkRecordViewModel.h"
+
+@interface LKAddWorkRecordVC ()<LKAddWorkDescriptionItemViewDelegate,LKAddPictureItemViewDelegate>
+
+@property (nonatomic, assign) CGFloat itemHeight;
+@property (nonatomic, strong) UIScrollView *bgScrollView;
+@property (nonatomic, strong) LKInputTextView *workTimeItem;
+//@property (nonatomic, strong) LKAddWorkAddressItemView *workAddressItem;
+@property (nonatomic, strong) LKInputTextView *workAddressItem;
+@property (nonatomic, strong) LKInputTextView *workTypeItem;
+@property (nonatomic, strong) LKInputTextView *workerNameItem;
+@property (nonatomic, strong) LKAddWorkDescriptionItemView *workDescItem;
+@property (nonatomic, strong) LKAddPictureItemView *pictureItem;
+@property (nonatomic, strong) LKAddWorkRecordBottomView *bottomView;
+
+@property (nonatomic, strong) NSMutableArray *workTypeArray;
+@property (nonatomic, strong) THPickerView *areaPickerView;
+@property (nonatomic, strong) THPickerView *timePickerView;
+@property (nonatomic, strong) NSMutableArray *workTimeArray;
+
+@property (nonatomic, assign) CGFloat pictureViewHeight;
+
+@property (nonatomic, strong) CLLocationManager *locationManager;
+@property (nonatomic, strong) UIButton *rightBtn;
+/** 当前选中数据 */
+/** 选中的工作类型 */
+@property (nonatomic, assign)__block NSInteger currentSelectWorkType;
+
+@property (nonatomic, copy)__block NSString *currentSelectWorkTime;
+
+@property (nonatomic, strong) NSMutableArray *currentSelectImageArray;
+
+
+@property (nonatomic, strong) LKAddWorkRecordViewModel *recordViewModel;
+@end
+
+@implementation LKAddWorkRecordVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.rightBtn = [self addRightNavButtonWithTitle:@"保存" action:@selector(rightBtnClick)];
+    self.pictureViewHeight = 150.0f;
+    self.workTimeArray = [NSMutableArray array];
+    for (NSInteger i = 0; i < 24; i ++ ) {
+        NSMutableDictionary *hourDict = [NSMutableDictionary dictionary];
+        [hourDict setObject:[NSString stringWithFormat:@"%.2ld",(long)i] forKey:@"name"];
+        NSMutableArray *minuteArray = [NSMutableArray array];
+        for (NSInteger j = 0; j < 60 ; j ++ ) {
+            NSMutableDictionary *minuteDict = [NSMutableDictionary dictionary];
+            [minuteDict setObject:[NSString stringWithFormat:@"%.2ld",(long)j] forKey:@"name"];
+            [minuteArray addObject:minuteDict];
+        }
+        [hourDict setObject:minuteArray forKey:@"data"];
+        [self.workTimeArray addObject:hourDict];
+    }
+    self.workTypeArray = [NSMutableArray arrayWithObjects:@"保安",@"保洁",@"消防",@"其他", nil];
+    self.itemHeight = 50.0f;
+    [self createUI];
+    [self bindData];
+    [self bindViewModelData];
+}
+
+#pragma mark - Datasource
+- (void)bindViewModelData {
+    
+}
+- (void)updateUI {
+    
+}
+/** 查看工作记录的时候先绑定数据 */
+- (void)bindData {
+    if (self.listModel != nil) {
+        /** 工作时间 */
+        if ([LKCustomTool isBlankString:self.listModel.createTime] == NO) {
+            NSArray *timeArray =[self.listModel.createTime componentsSeparatedByString:@" "] ;
+            if (timeArray.count == 2) {
+                NSString *time = [timeArray objectAtIndex:1];
+                if (time.length >= 5) {
+                    self.workTimeItem.textField.text = [time substringToIndex:5];
+                }
+            }
+        }
+        /** 工作地点 */
+        if ([LKCustomTool isBlankString:self.listModel.workPosition] == NO) {
+            self.workAddressItem.textField.text = self.listModel.workPosition;
+        }
+        /** 工作类型 */
+        self.workTypeItem.textField.text = [self.workTypeArray objectAtIndex:self.listModel.workType];
+        /** 员工用本地的，didLoad已赋值 */
+        /** 工作描述 */
+        if ([LKCustomTool isBlankString:self.listModel.workDesc] == NO) {
+            [self.workDescItem bindWorkDescriptionData:self.listModel.workDesc];
+            self.workDescItem.textView.userInteractionEnabled = NO;
+            [self.workDescItem.textView resignFirstResponder];
+        }
+        /** 工作照片 */
+        if (self.listModel.urls != nil && self.listModel.urls.count > 0) {
+            NSMutableArray *pictureArray = [NSMutableArray array];
+            for (LKPictureModel *pictureModel in self.listModel.urls) {
+                [pictureArray addObject:pictureModel.picName];
+            }
+            [self.pictureItem bindPictureData:pictureArray titleName:@"工作照片"];
+        }
+    }
+    [self.view endEditing:YES];
+}
+#pragma mark - Action
+/** 保存按钮 */
+- (void)rightBtnClick {
+    [self checkWorkRecordInputFinish];
+    /** 请求保存成功 */
+    if (self.isEdit) {
+        self.navigationItem.rightBarButtonItem = nil;
+    }else {
+        self.recordViewModel.requestTag = 2;
+        self.recordViewModel.requestUrl = LKUpdateWorkRecord;
+        NSMutableDictionary *params = [NSMutableDictionary dictionary];
+        NSString *userId = [NSString stringWithFormat:@"%d",[LKCustomMethods readUserInfo].userId];
+        [params setObject:userId forKey:@"managerId"];
+        [params setObject:[NSString stringWithFormat:@"%ld",self.currentSelectWorkType] forKey:@"workType"];
+        [params setObject:self.workAddressItem.textField.text forKey:@"workPosition"];
+
+        self.recordViewModel.requestDict = nil;
+        [self.navigationController popViewControllerAnimated:YES];
+    }
+}
+/** 删除编辑 */
+- (void)bottomViewAction {
+    @weakify(self);
+    [[self.bottomView.deleteBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        /** 请求接口删除该条工作记录，回调刷新列表数据 */
+        [self.navigationController popViewControllerAnimated:YES];
+    }];
+    /** 编辑 */
+    [[self.bottomView.editBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:self.rightBtn];
+        self.workDescItem.textView.userInteractionEnabled = YES;
+        [self.pictureItem reRefreshPictureView];
+    }];
+}
+- (void)showAreaPickerView {
+    [self.view endEditing:YES];
+    @weakify(self);
+    [self.areaPickerView showConfirmBlock:^(NSArray<NSString *> *indexArray) {
+        @strongify(self);
+        for (NSString *index in indexArray) {
+            self.currentSelectWorkType = [index integerValue];
+            self.workTypeItem.textField.text = [self.workTypeArray objectAtIndex:self.currentSelectWorkType];
+        }
+    }];
+}
+- (void)showTimePickerView {
+    [self.view endEditing:YES];
+    @weakify(self);
+    [self.timePickerView showConfirmBlock:^(NSArray<NSString *> *indexArray) {
+        @strongify(self);
+        if (indexArray.count >=2) {
+            NSInteger firstComponents = [[indexArray objectAtIndex:0] integerValue];
+            NSInteger secondComponents = [[indexArray objectAtIndex:1] integerValue];
+            NSString *hour = [[self.workTimeArray objectAtIndex:firstComponents] objectForKey:@"name"];
+            NSString *minute = [[[[self.workTimeArray objectAtIndex:firstComponents] objectForKey:@"data"] objectAtIndex:secondComponents] objectForKey:@"name"];
+            NSString *workTime = [NSString stringWithFormat:@"%@:%@",hour,minute];
+            self.workTimeItem.textField.text = workTime;
+            /** 加上年月日 */
+            self.currentSelectWorkTime = [NSString stringWithFormat:@"%@ %@:00",self.workDate,workTime];
+        }
+    }];
+}
+
+#pragma mark - UI
+- (void)createUI {
+    [self setNavBarTitle:@"工作记录"];
+    [self createBottomAndScrollView];
+    [self createItemView];
+}
+- (void)createBottomAndScrollView {
+    [self.view addSubview:self.bgScrollView];
+    if (self.isEdit) {
+        [self.view addSubview:self.bottomView];
+        [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.bottom.mas_equalTo(0);
+            make.height.mas_equalTo(50);
+        }];
+        [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.top.equalTo(self.view);
+            make.bottom.equalTo(self.bottomView.mas_top);
+        }];
+        [self bottomViewAction];
+        self.locationManager = [LKLocationManager sharedLKLocationManager].locationManager;
+        [LKLocationManager getResposeLocation:^(LKLocationModel *locationModel) {
+            if (locationModel != nil) {
+                self.workAddressItem.textField.text = [NSString stringWithFormat:@"%@%@%@%@",locationModel.currentCity,locationModel.subLocality,locationModel.thoroughfare,locationModel.name];
+            }
+        }];
+        [self.pictureItem hiddenPictureDeteleBtn];
+        self.navigationItem.rightBarButtonItem = nil;
+    }else {
+        [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.edges.equalTo(self.view);
+        }];
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:self.rightBtn];
+    }
+}
+- (void)createItemView {
+    [self.bgScrollView addSubview:self.workTimeItem];
+    [self.workTimeItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.workTimeItem bindDataWithText:@"工作时间" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请选择工作时间" textFieldText:@"" textFieldCanEdit:NO isShowNextBtn:YES];
+    /** 选择工作时间 */
+    @weakify(self);
+    [[self.workTimeItem.nextBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self showTimePickerView];
+    }];
+    [self.bgScrollView addSubview:self.workAddressItem];
+    [self.workAddressItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workTimeItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.workAddressItem bindDataWithText:@"工作地点" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请输入您的工作地点" textFieldText:@"" textFieldCanEdit:YES isShowNextBtn:NO];
+    [self.bgScrollView addSubview:self.workTypeItem];
+    [self.workTypeItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workAddressItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.workTypeItem bindDataWithText:@"工作类型" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请选择工作类型" textFieldText:@"" textFieldCanEdit:NO isShowNextBtn:YES];
+    /** 选择工作类型描述  */
+    [[self.workTypeItem.nextBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self showAreaPickerView];
+    }];
+    [self.bgScrollView addSubview:self.workerNameItem];
+    [self.workerNameItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workTypeItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    LKUserInfoModel *userModel = [LKCustomMethods readUserInfo];
+    NSString *userName = @"";
+    if (userModel != nil && [LKCustomTool isBlankString:userModel.name] == NO) {
+        userName = userModel.name;
+    }
+    [self.workerNameItem bindDataWithText:@"员工姓名" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请输入员工姓名" textFieldText:userName textFieldCanEdit:NO isShowNextBtn:NO];
+    [self.bgScrollView addSubview:self.workDescItem];
+    [self.workDescItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workerNameItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.bgScrollView addSubview:self.pictureItem];
+    [self.pictureItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workDescItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.pictureViewHeight);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(20);
+    }];
+}
+//#pragma mark - workAddress
+//- (void)LKAddWorkAddressItemViewDelegateViewHeight:(CGFloat)viewHeight {
+//    [self.bgScrollView layoutIfNeeded];
+//    [self.workAddressItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+//        make.top.equalTo(self.workTimeItem.mas_bottom);
+//        make.left.mas_equalTo(0);
+//        make.width.mas_equalTo(kScreen_Width);
+//        make.height.mas_equalTo(viewHeight);
+//    }];
+//    [self.bgScrollView layoutIfNeeded];
+//}
+#pragma mark - workDesc
+- (void)LKAddWorkDescriptionItemViewDelegateViewHeight:(CGFloat)viewHeight {
+    [self.workDescItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workerNameItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(viewHeight);
+    }];
+    [self.pictureItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workDescItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(150);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(20);
+    }];
+}
+#pragma mark - pictViewDelegate
+- (void)LKAddPictureItemViewDelegateViewHeight:(CGFloat)pictureViewHeight {
+    [self.view endEditing:YES];
+    if (pictureViewHeight < 150) {
+        pictureViewHeight = 150;
+    }
+    self.pictureViewHeight = pictureViewHeight;
+    [self.pictureItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workDescItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(pictureViewHeight);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(20);
+    }];
+    [self.bgScrollView layoutIfNeeded];
+}
+/** 选择照片 */
+- (void)LKAddPictureItemViewDelegateSelectPictureIndex:(NSInteger)pictureIndex {
+    
+}
+- (void)LKSelectPictureTypeViewDelegateView {
+    
+}
+
+#pragma mark - 判断输入
+- (void)checkWorkRecordInputFinish {
+    if ([LKCustomTool isBlankString:self.workTimeItem.textField.text]) {
+        [LKCustomMethods showWindowMessage:@"请选择工作时间"];
+        return;
+    }
+    if ([LKCustomTool isBlankString:self.workAddressItem.textField.text]) {
+        [LKCustomMethods showWindowMessage:@"请输入工作地点"];
+        return;
+    }
+    if ([LKCustomTool isBlankString:self.workTypeItem.textField.text]) {
+        [LKCustomMethods showWindowMessage:@"请选择工作类型"];
+        return;
+    }
+    if ([LKCustomTool isBlankString:self.workDescItem.textView.text]) {
+        [LKCustomMethods showWindowMessage:@"请输入工作描述"];
+        return;
+    }
+}
+#pragma mark - lazy
+- (UIScrollView *)bgScrollView {
+    if (_bgScrollView == nil) {
+        _bgScrollView = [[UIScrollView alloc] init];
+    }
+    return _bgScrollView;
+}
+- (LKInputTextView *)workTimeItem {
+    if (_workTimeItem == nil) {
+        _workTimeItem = [[LKInputTextView alloc] init];
+    }
+    return _workTimeItem;
+}
+- (LKInputTextView *)workAddressItem {
+    if (_workAddressItem == nil) {
+        _workAddressItem = [[LKInputTextView alloc] init];
+//        _workAddressItem.delegate = self;
+    }
+    return _workAddressItem;
+}
+- (LKInputTextView *)workTypeItem {
+    if (_workTypeItem == nil) {
+        _workTypeItem = [[LKInputTextView alloc] init];
+    }
+    return _workTypeItem;
+}
+- (LKInputTextView *)workerNameItem {
+    if (_workerNameItem == nil) {
+        _workerNameItem = [[LKInputTextView alloc] init];
+    }
+    return _workerNameItem;
+}
+- (LKAddWorkDescriptionItemView *)workDescItem {
+    if (_workDescItem == nil) {
+        _workDescItem = [[LKAddWorkDescriptionItemView alloc] init];
+        _workDescItem.delegate = self;
+    }
+    return _workDescItem;
+}
+- (LKAddPictureItemView *)pictureItem {
+    if (_pictureItem == nil) {
+        _pictureItem = [[LKAddPictureItemView alloc] init];
+        _pictureItem.delegate = self;
+    }
+    return _pictureItem;
+}
+- (LKAddWorkRecordBottomView *)bottomView {
+    if (_bottomView == nil) {
+        _bottomView = [[LKAddWorkRecordBottomView alloc] init];
+    }
+    return _bottomView;
+}
+- (THPickerView *)areaPickerView {
+    if (_areaPickerView == nil) {
+        _areaPickerView =[[THPickerView alloc] initWithDataKey:@"datas" AndDataArray:self.workTypeArray AndTestKey:@"test" AndNumberOfComponents:1];
+        _areaPickerView.titleLabel.text = @"工作类型";
+    }
+    return _areaPickerView;
+}
+- (THPickerView *)timePickerView {
+    if (_timePickerView == nil) {
+        _timePickerView =[[THPickerView alloc] initWithDataKey:@"data" AndDataArray:self.workTimeArray AndTestKey:@"name" AndNumberOfComponents:2];
+        _timePickerView.titleLabel.text = @"工作时间";
+    }
+    return _timePickerView;
+}
+- (NSMutableArray *)currentSelectImageArray {
+    if (_currentSelectImageArray == nil) {
+        _currentSelectImageArray = [NSMutableArray array];
+    }
+    return _currentSelectImageArray;
+}
+- (LKAddWorkRecordViewModel *)recordViewModel {
+    if (_recordViewModel == nil) {
+        _recordViewModel = [[LKAddWorkRecordViewModel alloc] init];
+    }
+    return _recordViewModel;
+}
+@end

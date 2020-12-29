@@ -1,0 +1,24 @@
+//
+//  LKQualityBottomView.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/23.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+
+typedef void(^PictureLookClick)(NSString * status);
+
+
+@interface LKScoreBottomView : UIView
+@property (nonatomic, strong) UIView *lineView;
+@property (nonatomic, strong) UILabel *identifyLabel;
+@property (nonatomic, strong) UILabel *nameLabel;
+@property (nonatomic, strong) UIView *leftView;
+@property(nonatomic,strong)YYLabel *scoreLabel;
+@property(nonatomic,strong)UIButton *lookBtn;
+@property(nonatomic,copy)PictureLookClick pictureLookClick;
+- (void)bindDataWithScore:(NSNumber *)score identify:(NSString *)identify name:(NSString *)name;
+@end

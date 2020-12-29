@@ -1,0 +1,205 @@
+//
+//  LKAddWorkRecordVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/30.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddWorkRecordVC.h"
+#import "LKAddWorkDescriptionItemView.h"
+#import "LKAddWorkAddressItemView.h"
+#import "LKAddPictureItemView.h"
+#import "LKAddWorkRecordBottomView.h"
+
+@interface LKAddWorkRecordVC ()<LKAddWorkAddressItemViewDelegate,LKAddWorkDescriptionItemViewDelegate,LKAddPictureItemViewDelegate>
+
+@property (nonatomic, assign) CGFloat itemHeight;
+@property (nonatomic, strong) UIScrollView *bgScrollView;
+@property (nonatomic, strong) LKInputTextView *workTimeItem;
+@property (nonatomic, strong) LKAddWorkAddressItemView *workAddressItem;
+@property (nonatomic, strong) LKInputTextView *workTypeItem;
+@property (nonatomic, strong) LKInputTextView *workerNameItem;
+@property (nonatomic, strong) LKAddWorkDescriptionItemView *workDescItem;
+@property (nonatomic, strong) LKAddPictureItemView *pictureItem;
+@property (nonatomic, strong) LKAddWorkRecordBottomView *bottomView;
+@end
+
+@implementation LKAddWorkRecordVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.itemHeight = 50.0f;
+    [self createUI];
+}
+- (void)createUI {
+    [self setNavBarTitle:@"工作记录"];
+    [self createBottomAndScrollView];
+    [self createItemView];
+}
+- (void)createBottomAndScrollView {
+    [self.view addSubview:self.bgScrollView];
+    self.isEdit = YES;
+    if (self.isEdit) {
+        [self.view addSubview:self.bottomView];
+        [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.bottom.mas_equalTo(0);
+            make.height.mas_equalTo(50);
+        }];
+        [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.top.equalTo(self.view);
+            make.bottom.equalTo(self.bottomView.mas_top);
+        }];
+    }else {
+        [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.edges.equalTo(self.view);
+        }];
+    }
+}
+- (void)createItemView {
+    [self.bgScrollView addSubview:self.workTimeItem];
+    [self.workTimeItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.workTimeItem bindDataWithText:@"工作时间" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请输入工作时间" textFieldText:@"2018-07-30" textFieldCanEdit:YES isShowNextBtn:NO];
+    [self.bgScrollView addSubview:self.workAddressItem];
+    [self.workAddressItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workTimeItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.bgScrollView addSubview:self.workTypeItem];
+    [self.workTypeItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workAddressItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.workTypeItem bindDataWithText:@"工作类型" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请选择工作类型" textFieldText:@"" textFieldCanEdit:NO isShowNextBtn:YES];
+    /** 选择工作类型事件 */
+    [[self.workTypeItem.nextBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        
+    }];
+    [self.bgScrollView addSubview:self.workerNameItem];
+    [self.workerNameItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workTypeItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    LKUserInfoModel *userModel = [LKCustomMethods readUserInfo];
+    NSString *userName = @"";
+    if (userModel != nil && [LKCustomTool isBlankString:userModel.name] == NO) {
+        userName = userModel.name;
+    }
+    [self.workerNameItem bindDataWithText:@"员工姓名" TextFont:LK_14font TextColor:LKGrayColor placeholder:@"请输入员工姓名" textFieldText:userName textFieldCanEdit:NO isShowNextBtn:NO];
+    [self.bgScrollView addSubview:self.workDescItem];
+    [self.workDescItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workerNameItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.bgScrollView addSubview:self.pictureItem];
+    [self.pictureItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workDescItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(150);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(20);
+    }];
+}
+#pragma mark - workAddress
+- (void)LKAddWorkAddressItemViewDelegateViewHeight:(CGFloat)viewHeight {
+    [self.bgScrollView layoutIfNeeded];
+    [self.workAddressItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workTimeItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(viewHeight);
+    }];
+    [self.bgScrollView layoutIfNeeded];
+}
+#pragma mark - workDesc
+- (void)LKAddWorkDescriptionItemViewDelegateViewHeight:(CGFloat)viewHeight {
+    [self.bgScrollView layoutIfNeeded];
+    [self.workDescItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workerNameItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(viewHeight);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(20);
+    }];
+    [self.bgScrollView layoutIfNeeded];
+
+}
+#pragma mark - pictViewDelegate
+- (void)LKAddPictureItemViewDelegateViewHeight:(CGFloat)pictureViewHeight {
+    [self.pictureItem mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workDescItem.mas_bottom);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(pictureViewHeight);
+    }];
+    [self.bgScrollView layoutIfNeeded];
+}
+- (void)LKSelectPictureTypeViewDelegateView {
+    
+}
+#pragma mark - lazy
+- (UIScrollView *)bgScrollView {
+    if (_bgScrollView == nil) {
+        _bgScrollView = [[UIScrollView alloc] init];
+    }
+    return _bgScrollView;
+}
+- (LKInputTextView *)workTimeItem {
+    if (_workTimeItem == nil) {
+        _workTimeItem = [[LKInputTextView alloc] init];
+    }
+    return _workTimeItem;
+}
+- (LKAddWorkAddressItemView *)workAddressItem {
+    if (_workAddressItem == nil) {
+        _workAddressItem = [[LKAddWorkAddressItemView alloc] init];
+        _workAddressItem.delegate = self;
+    }
+    return _workAddressItem;
+}
+- (LKInputTextView *)workTypeItem {
+    if (_workTypeItem == nil) {
+        _workTypeItem = [[LKInputTextView alloc] init];
+    }
+    return _workTypeItem;
+}
+- (LKInputTextView *)workerNameItem {
+    if (_workerNameItem == nil) {
+        _workerNameItem = [[LKInputTextView alloc] init];
+    }
+    return _workerNameItem;
+}
+- (LKAddWorkDescriptionItemView *)workDescItem {
+    if (_workDescItem == nil) {
+        _workDescItem = [[LKAddWorkDescriptionItemView alloc] init];
+        _workDescItem.delegate = self;
+    }
+    return _workDescItem;
+}
+- (LKAddPictureItemView *)pictureItem {
+    if (_pictureItem == nil) {
+        _pictureItem = [[LKAddPictureItemView alloc] init];
+        _pictureItem.delegate = self;
+    }
+    return _pictureItem;
+}
+- (LKAddWorkRecordBottomView *)bottomView {
+    if (_bottomView == nil) {
+        _bottomView = [[LKAddWorkRecordBottomView alloc] init];
+    }
+    return _bottomView;
+}
+@end

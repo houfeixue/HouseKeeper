@@ -1,0 +1,21 @@
+//
+//  LKQualityHistoryModel.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/18.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface LKQualityHistoryModel : NSObject
+@property (nonatomic, copy) NSString *createTime;
+/** 用户身份 */
+@property (nonatomic, copy) NSString *identityName;
+@property (nonatomic, copy) NSString *realName;
+@property (nonatomic, strong) NSNumber *recordId;
+/** 小区名称 */
+@property (nonatomic, copy) NSString *regionName;
+@property (nonatomic, strong) NSNumber *scort;
+
+@end

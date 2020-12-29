@@ -1,0 +1,76 @@
+//
+//  LKDefineHeader.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/11.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#ifndef LKDefineHeader_h
+#define LKDefineHeader_h
+
+//DEBUG  模式下打印日志,当前行
+#ifdef DEBUG
+#   define DLog(fmt, ...) NSLog((@"%s [Line %d] " fmt), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__);
+#else
+#   define DLog(...)
+#endif
+
+//颜色值
+#define LKBlackColor  [ColorUtil colorWithHex:@"#424152"] //主色
+#define LKCrownColor  [ColorUtil colorWithHex:@"#52718D"]
+#define LKLightGreenColor  [ColorUtil colorWithHex:@"#41A3AC"]
+#define LKLightRedColor  [ColorUtil colorWithHex:@"#C06163"]
+#define LKRedColor  [ColorUtil colorWithHex:@"#D0021B"]
+#define LKBlueColor  [ColorUtil colorWithHex:@"#4A90E2"]
+#define LKF7Color  [ColorUtil colorWithHex:@"#F7F7F7"]
+#define LKF2Color  [ColorUtil colorWithHex:@"#F2F2F2"]
+#define LK99Color  [ColorUtil colorWithHex:@"#999999"]
+#define LKLightGrayColor  [ColorUtil colorWithHex:@"#666666"]
+#define LKGrayColor  [ColorUtil colorWithHex:@"#333333"]
+#define LKDisableGrayColor  [ColorUtil colorWithHex:@"#CCCCCC"]
+#define LKDisableBtnColor  [ColorUtil colorWithHex:@"#D8D8D8"]
+
+#define LKLineColor  [ColorUtil colorWithHex:@"#E9E9E9"]
+
+#define RGBA(r,g,b,a)         [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a]
+
+//左右边距
+#define LKLeftMargin   12
+#define LKRightMargin   -12
+
+
+
+//弱引用
+#define WS(weakSelf)  __weak __typeof(&*self)weakSelf = self;
+
+
+//NSUserDefault
+#define LKNetWorksStatus @"NetWorksStatus"
+
+//数据库路径
+#define LKUserInfoPath [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"UserInfo.plist"] // 用户信息
+
+#define LKPhotoAlbumoPath [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"PhotoAlbum.db"] //本地相册
+
+#define LKPicturePath [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"Picture"] //本地图片
+
+
+//通知
+#define LKNetStatusNotiation  @"NetStatusNotiation"
+
+#define LKTakePhotoSucessNotiation  @"TakePhotoSucessNotiation"
+
+
+//userdefault
+#define LKUser_Alumb @"User_Alumb"
+
+
+//默认图片
+
+#define LKPicture_Default @"photo_default"
+
+
+
+
+#endif /* LKDefineHeader_h */

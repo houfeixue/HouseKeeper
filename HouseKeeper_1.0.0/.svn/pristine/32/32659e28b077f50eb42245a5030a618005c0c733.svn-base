@@ -1,0 +1,54 @@
+//
+//  LKAddWorkRecordVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/30.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddWorkRecordVC.h"
+#import "LKAddWorkDescriptionItemView.h"
+
+@interface LKAddWorkRecordVC ()
+@property (nonatomic, assign) CGFloat itemHeight;
+@property (nonatomic, strong) UIScrollView *bgScrollView;
+@property (nonatomic, strong) LKInputTextView *workTimeItem;
+@property (nonatomic, strong) LKAddWorkDescriptionItemView *workAddressItem;
+
+
+@end
+
+@implementation LKAddWorkRecordVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.itemHeight = 50.0f;
+    [self createUI];
+}
+- (void)createUI {
+    [self.view addSubview:self.bgScrollView];
+    [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    [self.bgScrollView addSubview:self.workTimeItem];
+    [self.workTimeItem mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.mas_equalTo(0);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(self.itemHeight);
+    }];
+    [self.workTimeItem bindDataWithText:@"工作时间" TextFont:LK_15font TextColor:LKGrayColor placeholder:@"请输入工作时间" textFieldText:@"2018-07-30" textFieldCanEdit:YES isShowNextBtn:NO];
+}
+- (UIScrollView *)bgScrollView {
+    if (_bgScrollView == nil) {
+        _bgScrollView = [[UIScrollView alloc] init];
+    }
+    return _bgScrollView;
+}
+- (LKInputTextView *)workTimeItem {
+    if (_workTimeItem == nil) {
+        _workTimeItem = [[LKInputTextView alloc] init];
+    }
+    return _workTimeItem;
+}
+@end

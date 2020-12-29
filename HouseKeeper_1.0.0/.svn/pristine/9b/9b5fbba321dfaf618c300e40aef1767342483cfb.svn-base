@@ -1,0 +1,22 @@
+platform :ios,'8.0'
+use_frameworks!
+
+target 'HouseKeeper' do
+
+    pod 'MBProgressHUD',        '~> 1.0.0'
+    pod 'IQKeyboardManager'
+    pod 'CYLTabBarController' 
+    pod 'YYText', '~> 1.0.7'
+    pod 'MJRefresh', '~> 3.1.15.1'
+    pod 'ReactiveObjC'
+    pod 'AFNetworking', '~> 3.1.0'
+    pod 'Masonry', '~> 1.1.0'
+    pod 'MJExtension', '~> 3.0.13'
+    pod 'FMDB', '~> 2.7.2'
+    pod 'SDWebImage', '~> 4.2.2'
+    pod 'LDProgressView', '~> 1.2.1'
+end
+
+
+
+

@@ -1,0 +1,66 @@
+//
+//  LKMyViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/11.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKMyViewModel.h"
+
+@implementation LKMyViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setUp];
+        [self requestData];
+    }
+    return self;
+}
+
+-(void)setUp{
+    
+    @weakify(self)
+    [[RACObserve(self,requestDict)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        NSLog(@"RACObserve 请求接口 url:%@ :  %@",self.requestUrl,requestDict);
+        
+        [self requestUrl:self.requestUrl withData:requestDict withRequestType:RequestType_Get withTag:1];
+        
+    }];
+    
+}
+
+-(void)requestData{
+    
+    @weakify(self)
+    
+    [self.requestViewModelOKSubject subscribeNext:^(NSString *  requestJson) {
+        NSLog(@"请求接口完成%@-%@ : %@",self.requestUrl,self.requestDict,requestJson);
+        
+        @strongify(self);
+        //todo 处理数据
+        
+        LKUserInfoModel * model = [[LKUserInfoModel alloc]init];
+        model.name = @"123";
+        model.portrait = @"456";
+        [LKCustomMethods saveUserInfo:model];
+        
+        [LKCustomMethods showView:nil withMessage:@"登录成功"];
+        
+        
+        LKUserInfoModel * model2 =[LKCustomMethods readUserInfo];
+        NSLog(@"%@",model2.name);
+        
+    }];
+    
+    [self.requestViewModelErrorSubject subscribeNext:^(NSError * x) {
+        NSLog(@"%@",x.localizedDescription);
+    }];
+    
+    
+    
+}
+
+@end

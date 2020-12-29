@@ -1,0 +1,95 @@
+//
+//  LKPicHeaderReusableView.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/24.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPicturesSectionHeaderReusableView.h"
+
+@implementation LKPicturesSectionHeaderReusableView
+
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        NSLog(@"LKHomeCollectionReusableView.h");
+        [self conFigUI:frame];
+    }
+    return self;
+}
+-(void)conFigUI:(CGRect)frame
+{
+    [self addSubview:self.nameLabel];
+    [self addSubview:self.selectLabel];
+    self.backgroundColor = [UIColor whiteColor];
+    [self.selectLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self).offset(LKRightMargin);
+        make.centerY.equalTo(self);
+        make.width.equalTo(@(90));
+        make.height.equalTo(@(30));
+    }];
+    
+    [self.nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.centerY.equalTo(self);
+        make.right.equalTo(self.selectLabel.mas_left);
+        make.height.equalTo(@(30));
+
+    }];
+    
+}
+
+//lazy
+-(UILabel *)nameLabel
+{
+    if (_nameLabel == nil) {
+        _nameLabel = [[UILabel alloc] init];
+        _nameLabel.font = LK_16font;
+        _nameLabel.textColor =   [UIColor colorWithRed:102/255.0 green:102/255.0 blue:102/255.0 alpha:1/1.0];
+    }
+    return _nameLabel;
+}
+
+-(UILabel *)selectLabel
+{
+    if (_selectLabel == nil) {
+        _selectLabel = [[UILabel alloc] init];
+        _selectLabel.font = LK_16font;
+        _selectLabel.textColor = [UIColor colorWithRed:74/255.0 green:144/255.0 blue:226/255.0 alpha:1/1.0];
+        _selectLabel.textAlignment = NSTextAlignmentRight;
+        _selectLabel.userInteractionEnabled = YES;
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]init];
+        [_selectLabel addGestureRecognizer:tap];
+        @weakify(self)
+        [[tap rac_gestureSignal] subscribeNext:^(id x) {
+            @strongify(self);
+            if (self.picturesClick) {
+                self.picturesClick(self->_select);
+            }
+        }];
+        
+    }
+    return _selectLabel;
+}
+//NSInteger _select; //0 选择 1 全选 2取消选择
+
+
+-(void)conDataTime:(NSString *)time withSelect:(NSInteger )select
+{
+    _select = select;
+    _nameLabel.text = time;
+    
+    if (_select == 0) {
+        _selectLabel.text = @"选择";
+    }else if (_select == 1){
+        _selectLabel.text = @"全选";
+
+    }else if (_select == 2){
+        _selectLabel.text = @"取消选择";
+        
+    }
+}
+@end

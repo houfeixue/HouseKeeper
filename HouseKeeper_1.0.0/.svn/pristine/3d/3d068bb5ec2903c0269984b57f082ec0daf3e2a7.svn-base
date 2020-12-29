@@ -1,0 +1,85 @@
+//
+//  LKScoreDetailView.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/31.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKScoreDetailView.h"
+
+@implementation LKScoreDetailView
+
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+-(instancetype)init
+{
+    self = [super init];
+    
+    if (self) {
+        [self _setUpView];
+    }
+    return self;
+}
+-(void)_setUpView
+{
+    self.backgroundColor = [UIColor colorWithRed:66/255.0 green:65/255.0 blue:82/255.0 alpha:1/1.0];
+    
+    [self addSubview:self.saveBtn];
+    [self addSubview:self.nextBtn];
+    
+    [self.saveBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.bottom.equalTo(self);
+        make.width.equalTo(self).dividedBy(2);
+    }];
+    
+    [self.nextBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.top.bottom.equalTo(self);
+        make.width.equalTo(self).dividedBy(2);
+    }];
+    
+}
+///lazy
+
+-(UIButton *)saveBtn
+{
+    if (_saveBtn == nil) {
+        _saveBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_saveBtn setTitle:@"保存并返回" forState:UIControlStateNormal];
+        _saveBtn.titleLabel.font = LK_18font;
+         @weakify(self)
+        [[_saveBtn rac_signalForControlEvents:UIControlEventTouchUpInside]subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            
+            if (self.scoreDetailClick) {
+                self.scoreDetailClick(@"save");
+            }
+        }];
+    }
+    return _saveBtn;
+}
+
+-(UIButton *)nextBtn
+{
+    if (_nextBtn == nil) {
+        _nextBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_nextBtn setTitle:@"保存去下一项" forState:UIControlStateNormal];
+        _nextBtn.titleLabel.font = LK_18font;
+        @weakify(self)
+        [[_nextBtn rac_signalForControlEvents:UIControlEventTouchUpInside]subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            if (self.scoreDetailClick) {
+                self.scoreDetailClick(@"next");
+            }
+        }];
+    }
+    return _nextBtn;
+}
+
+@end

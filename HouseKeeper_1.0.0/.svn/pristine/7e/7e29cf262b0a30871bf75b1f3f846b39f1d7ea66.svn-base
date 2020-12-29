@@ -1,0 +1,476 @@
+//
+//  LKHomePageVc.m
+//  HouseKeeper
+//
+//  Created by Lin Hu on 2018/7/31.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKHomePageVc.h"
+#import "LKMyViewController.h"
+#import "LKQualityListVC.h"
+#import "LKWorkRecordVC.h"
+#import "LKAlumbsViewController.h"
+#import "LKPictureHandleVC.h"
+#import "LKRequestViewModel.h"
+#import "LKMyMessageModel.h"
+
+#import "LKChatViewController.h"
+#import "LKChatDetailVc.h"
+#import "SDChat.h"
+#import "NSString+Emoji.h"
+
+@interface LKHomePageVc ()
+@property(nonatomic,strong)  UIView *personBackView;;
+@property(nonatomic,strong) UIImageView *personImageView;/// 用户图像
+@property(nonatomic,strong)    UILabel *nameLable;/// 用户姓名
+@property(nonatomic,strong)  UILabel *IdentityLable;/// 用户身份
+@property(nonatomic,strong)  UILabel *tipLable;/// 用户留言
+
+
+@property(nonatomic,strong) UIButton *button; /// 用户留言试图
+
+@property (nonatomic, strong) LKMyMessageModel *myModel;
+
+@property (nonatomic, strong) NSDictionary *topDict;
+
+@property (nonatomic, strong) NSDictionary *Chatdata; /// 跳转聊天详情
+
+@end
+
+@implementation LKHomePageVc
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor whiteColor];
+    self.Chatdata  = [NSDictionary dictionary];
+    [self pictureHandleNotification];
+    NSDate * newDate = [NSDate date];
+    NSString * data = [LKCustomMethods timeStrFormTime:[newDate timeIntervalSince1970] withFormatter:@"YYYY年M月d日"];
+    [self addLeftNavLabelWithTitle:data];
+    
+    
+    [self addRightNavButtonWithImage:[UIImage imageNamed:@"home_icon_messages"] action:@selector(messageAction)];
+    
+    /// 个人信息界面
+    [self createPersonView];
+    
+    /// 留言信息界面
+    [self createTipMessageView];
+    
+    /// 四大板块
+    [self createFourButtonView];
+    
+    
+}
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    [self requestData];
+    
+    /// 获取最新消息以及数量
+    [self getNewMessage];
+}
+
+-(void)requestData{
+    /// 请求数据
+    LKUserInfoModel *model = [LKCustomMethods readUserInfo];
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    [params setObject:@(model.userId) forKey:@"customerId"];
+    
+    [LKCustomMethods showMBMBHUBView:self.view];
+    [[LKHttpRequest  request] POST:LKReadPersonInfo parameters:params tag:0 success:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSString * _Nonnull responseString) {
+        [LKCustomMethods hideMBMBHUBView:self.view];
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:responseString];
+        int successResult  = [[requestJson objectForKey:@"status"] intValue];
+        if ( successResult == 1) {
+            NSDictionary *data =  [LKCustomMethods objectWithJsonString:[LKEntcry decryptAES:[requestJson objectForKey:@"data"]]];
+            self.myModel = [LKMyMessageModel mj_objectWithKeyValues:data];
+            NSString *urltring = [NSString stringWithFormat:@"%@%@",LKIconHost,self.myModel.portrait];
+            [self.personImageView yy_setImageWithURL:[NSURL URLWithString:urltring] placeholder:[UIImage imageNamed:@"homePicDefault"]];
+            self.nameLable.text = self.myModel.NAME;
+            self.IdentityLable.text = [NSString stringWithFormat:@"身份：%@",self.myModel.roleName];
+            
+        }else {
+            
+            [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+        }
+        
+    } failure:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSError * _Nonnull error) {
+        NSLog(@"%@",error.localizedDescription);
+        [LKCustomMethods hideMBMBHUBView:self.view];
+    }];
+}
+
+#pragma mark - 获取最新消息跟数量
+-(void)getNewMessage
+{
+    LKUserInfoModel *model = [LKCustomMethods readUserInfo];
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    [params setObject:@(model.userId) forKey:@"customerId"];
+    
+    [[LKHttpRequest  request] POST:LKGetPersonNewMessage parameters:params tag:1 success:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSString * _Nonnull responseString) {
+        NSDictionary *requestJson = [LKCustomMethods dictionaryWithJsonString:responseString];
+        int successResult  = [[requestJson objectForKey:@"status"] intValue];
+        if ( successResult == 1) {
+            self.Chatdata =  [LKCustomMethods objectWithJsonString:[LKEntcry decryptAES:[requestJson objectForKey:@"data"]]];
+            int messageNum  = [[self.Chatdata objectForKey:@"messagenum"] intValue]; /// 未读消息数
+           
+                UIButton * _rightBtn = [ViewFactory buttonWithFrame:CGRectMake(0, 0, 40, 40) title:@"" bgImageKey:nil fontSize:14 titleColor:[UIColor whiteColor] target:self action:@selector(messageAction)];
+                [_rightBtn setImage:[UIImage imageNamed:@"home_icon_messages"] forState:UIControlStateNormal];
+                
+                UIImageView *redview = [ViewFactory imageViewWithImage:nil frame:CGRectMake(_rightBtn.right+5, _rightBtn.top+8, 10, 10) round:YES];
+                redview.backgroundColor = [UIColor redColor];
+                if (messageNum > 0) {
+                  redview.backgroundColor = [UIColor redColor];
+                }else{
+                  redview.backgroundColor = [UIColor clearColor];
+                }
+                [_rightBtn addSubview:redview];
+                self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:_rightBtn];
+            
+            
+            self.topDict = [self.Chatdata objectForKey:@"top"];
+            if ([LKCustomTool isBlankString:[self.topDict objectForKey:@"message"]]) {
+                self.tipLable.text = @"暂无最新消息";
+            }else{
+                
+                self.tipLable.text = [NSString stringWithFormat:@"%@:%@",[self.topDict objectForKey:@"fromUserName"],[NSString decodeEmoj:[self.topDict objectForKey:@"message"]]];
+            }
+            
+        }else {
+            
+            [LKCustomMethods showWindowMessage:[requestJson objectForKey:@"msg"]];
+        }
+        
+    } failure:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSError * _Nonnull error) {
+        NSLog(@"%@",error.localizedDescription);
+        [LKCustomMethods hideMBMBHUBView:self.view];
+    }];
+}
+
+#pragma mark - 个人信息试图
+-(void)createPersonView
+{
+    [self.view addSubview:self.personBackView];
+    [self.personBackView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_equalTo(0);
+        make.left.equalTo(self.view.mas_left);
+        make.right.equalTo(self.view.mas_right);
+        
+        make.height.mas_equalTo(80);
+    }];    
+    UIImageView *iconView = [[UIImageView alloc] init];
+    iconView.image = [UIImage imageNamed:@"app_icon_forward_white"];
+    [self.personBackView addSubview:iconView];
+    
+    [self.personBackView addSubview:self.personImageView];
+    [self.personBackView addSubview:self.nameLable];
+    [self.personBackView addSubview:self.IdentityLable];
+    [self.personImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.personBackView.mas_left).inset(15);
+        make.centerY.equalTo(self.personBackView.mas_centerY);
+        make.width.height.mas_equalTo(50);
+    }];
+    [self.nameLable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.personImageView.mas_right).inset(25);
+        make.top.equalTo(self.personImageView.mas_top).inset(5);
+    }];
+    
+    [self.IdentityLable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.nameLable.mas_left);
+        make.top.equalTo(self.nameLable.mas_bottom).inset(8);
+    }];
+    
+    [iconView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.personBackView.mas_right).inset(25);
+        make.centerY.equalTo(self.personBackView.mas_centerY);
+        make.width.mas_equalTo(6);
+        make.height.mas_equalTo(10);
+    }];
+    
+    UIButton *clickButton = [[UIButton alloc] init];
+    [self.personBackView addSubview:clickButton];
+    [clickButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.personBackView.mas_left);
+        make.top.equalTo(self.personBackView.mas_top);
+        make.right.equalTo(self.personBackView.mas_right);
+        make.bottom.equalTo(self.personBackView.mas_bottom);
+    }];
+    
+    @weakify(self);
+    [[clickButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了跳转");
+        LKMyViewController *vc = [[LKMyViewController alloc] init];
+        [self.navigationController pushViewController:vc animated:YES];
+    }];
+    
+}
+
+-(void)createTipMessageView
+{
+    self.button = [[UIButton alloc] init];
+    self.button.backgroundColor = [UIColor whiteColor];
+    self.button.layer.cornerRadius = 8;
+    self.button.layer.shadowOffset =  CGSizeMake(1, 1);
+    self.button.layer.shadowOpacity = 0.5;
+    self.button.layer.shadowColor =  LKGrayColor.CGColor;
+    [self.view addSubview:self.button];
+    
+    UIImageView *tipImageView = [[UIImageView alloc] init];
+    tipImageView.image = [UIImage imageNamed:@"home_icon_remind"];
+    [self.button addSubview:tipImageView];
+    [self.button addSubview:self.tipLable];
+    UIImageView *rightImageView = [[UIImageView alloc] init];
+    rightImageView.image = [UIImage imageNamed:@"app_icon_forward"];
+    [self.button addSubview:rightImageView];
+    
+    [self.button mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.view.mas_left).inset(LKLeftMargin);
+        make.top.equalTo(self.personBackView.mas_bottom).inset(20);
+        make.right.equalTo(self.view.mas_right).inset(LKLeftMargin);
+        make.height.mas_equalTo(50);
+    }];
+    
+    [tipImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.button.mas_left).inset(10);
+        make.centerY.equalTo(self.button.mas_centerY);
+        make.width.height.mas_equalTo(10);
+    }];
+    
+    [rightImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.button.mas_right).inset(10);
+        make.centerY.equalTo(self.button.mas_centerY);
+        make.width.mas_equalTo(6);
+        make.height.mas_equalTo(10);
+    }];
+    
+    [self.tipLable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(tipImageView.mas_right).inset(6);
+        make.centerY.equalTo(self.button.mas_centerY);
+        make.right.equalTo(rightImageView.mas_left).inset(5);
+    }];
+    
+    @weakify(self);
+    [[self.button rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了留言跳转");
+        SDChat *chat =[SDChat chatWithDic: [self.Chatdata objectForKey:@"top"]];
+        chat.isONLine =YES;
+        LKChatDetailVc *v =[[LKChatDetailVc alloc]init];
+        v.chat =chat;
+        v.myModel = self.myModel;
+        if (chat.fromUserId.length != 0) {
+             [self.navigationController pushViewController:v animated:YES];
+        }else
+        {
+            LKChatViewController *vc = [[LKChatViewController alloc] init];
+            vc.myModel = self.myModel;
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+       
+    }];
+}
+
+-(void)createFourButtonView{
+    CGFloat with = (kScreen_Width - 3*LKLeftMargin)/2;
+    CGFloat height = 8*with/17;
+    
+    UIButton *qualityButton = [self createButtonWithFramE:CGRectMake(LKLeftMargin, 3*LKLeftMargin + 130, with, height) title:@"品质抽查" titleColor:[ColorUtil colorWithHex:@"#F58484"] message:@"确保质量满足要求" picture:@"home_icon_check" tag:0];
+    [self.view addSubview:qualityButton];
+    
+    UIButton *recordButton = [self createButtonWithFramE:CGRectMake(qualityButton.right+LKLeftMargin, qualityButton.y, with, height) title:@"工作记录" titleColor:[ColorUtil colorWithHex:@"#27AE60"] message:@"实时管理工作记录" picture:@"home_icon_notes" tag:1];
+    [self.view addSubview:recordButton];
+    
+    UIButton *albumButton = [self createButtonWithFramE:CGRectMake(LKLeftMargin, qualityButton.bottom +LKLeftMargin, with, height) title:@"工作相册" titleColor:[ColorUtil colorWithHex:@"#F1C40F"] message:@"管理抽查拍摄照片" picture:@"home_icon_photo" tag:2];
+    [self.view addSubview:albumButton];
+    
+    UIButton *takeButton = [self createButtonWithFramE:CGRectMake(albumButton.right+LKLeftMargin, albumButton.y, with, height) title:@"拍工作照" titleColor:[ColorUtil colorWithHex:@"#3498DB"] message:@"记录工作中的照片" picture:@"home_icon_camera" tag:3];
+    [self.view addSubview:takeButton];
+
+   
+    @weakify(self);
+    [[qualityButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了品质抽查");
+        LKQualityListVC *vc = [[LKQualityListVC alloc] init];
+        [self.navigationController pushViewController:vc animated:YES];
+        
+    }];
+    
+    [[recordButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了工作记录");
+        LKWorkRecordVC *vc = [[LKWorkRecordVC alloc] init];
+        [self.navigationController pushViewController:vc animated:YES];
+        
+    }];
+    
+    
+    
+    [[albumButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了工作相册");
+        LKAlumbsViewController *vc = [[LKAlumbsViewController alloc] init];
+        [self.navigationController pushViewController:vc animated:YES];
+    }];
+    
+    [[takeButton rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        DLog(@"点击了拍照");
+        [self showCamerTool];
+
+    }];
+
+}
+- (void)pictureHandleNotification {
+    @weakify(self);
+    [[[NSNotificationCenter defaultCenter] rac_addObserverForName:@"LKPictureHandleVCFinishShowCamera" object:nil] subscribeNext:^(NSNotification * _Nullable x) {
+        @strongify(self);
+        [self showCamerTool];
+    }];
+
+}
+- (void)showCamerTool {
+    [[LKCameraTool sharedLKCameraTool] showPickerController:self pictureHandle:^(NSMutableDictionary * dict) {
+        LKPictureHandleVC *vc = [[LKPictureHandleVC alloc] init];
+        vc.pictureDict = dict;
+        [self.navigationController pushViewController:vc animated:YES];
+    }];
+}
+#pragma mark - 跳转个人信息
+-(void)messageAction{
+    DLog(@"点击了个人信息");
+    if (self.myModel) {
+        
+        LKChatViewController *vc = [[LKChatViewController alloc] init];
+        vc.myModel = self.myModel;
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+   
+}
+
+
+#pragma mark - 创建view
+-(UIButton *)createButtonWithFramE:(CGRect)frame title:(NSString *)title  titleColor:(UIColor *)color  message:(NSString *)message picture:(NSString *)pisString  tag:(int)tag
+{
+    UIButton *button = [[UIButton alloc] initWithFrame:frame];
+    button.backgroundColor = [UIColor whiteColor];
+    button.layer.cornerRadius = 8;
+    button.layer.shadowOffset =  CGSizeMake(1, 1);
+    button.layer.shadowOpacity = 0.5;
+    button.layer.shadowColor =  LKGrayColor.CGColor;
+    button.tag = tag;
+    
+    UILabel *titleLable = [[UILabel alloc] init];
+    titleLable.text = title;
+    titleLable.textColor = color;
+    titleLable.textAlignment = NSTextAlignmentLeft;
+    titleLable.font = LK_14font;
+    [button addSubview:titleLable];
+    
+    UILabel *messageLable = [[UILabel alloc] init];
+    messageLable.text = message;
+    messageLable.textColor = LK99Color;
+    messageLable.textAlignment = NSTextAlignmentLeft;
+    messageLable.font = LK_11font;
+    [button addSubview:messageLable];
+    
+    UIImageView * picView = [[UIImageView alloc] init];
+    picView.image = [UIImage imageNamed:pisString];
+    [button addSubview:picView];
+    
+    [titleLable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(button.mas_left).inset(10);
+        make.bottom.equalTo(button.mas_centerY).inset(2);
+    }];
+    
+    [messageLable mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(titleLable.mas_left);
+        make.top.equalTo(button.mas_centerY).inset(3);
+        
+    }];
+    
+    [picView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(button.mas_right).inset(LKLeftMargin);
+        make.centerY.equalTo(button.mas_centerY);
+        make.width.height.mas_equalTo(mySizeThree(35,35,52,55,55));
+        
+    }];
+    
+    return button;
+}
+
+
+
+////lazy
+-(UIImageView *)personImageView
+{
+    if (!_personImageView) {
+        _personImageView = [[UIImageView alloc] init];
+        _personImageView.layer.cornerRadius = 25;
+        _personImageView.clipsToBounds = YES;
+        _personImageView.contentMode = UIViewContentModeScaleAspectFill;
+    }
+    return _personImageView;
+}
+
+-(UILabel *)nameLable
+{
+    if (!_nameLable) {
+        _nameLable = [[UILabel alloc] init];
+        _nameLable.font = LK_15font;
+        _nameLable.textColor = [UIColor whiteColor];
+        _nameLable.textAlignment = NSTextAlignmentLeft;
+    }
+    return _nameLable;
+}
+
+-(UILabel *)IdentityLable
+{
+    if (!_IdentityLable) {
+        _IdentityLable = [[UILabel alloc] init];
+        _IdentityLable.font = LK_10font;
+        _IdentityLable.textColor = [UIColor whiteColor];
+        _IdentityLable.textAlignment = NSTextAlignmentLeft;
+    }
+    return _IdentityLable;
+}
+
+-(UILabel *)tipLable
+{
+    if (!_tipLable) {
+        _tipLable = [[UILabel alloc] init];
+        _tipLable.font = LK_13font;
+        _tipLable.textColor = LKLightGrayColor;
+        _tipLable.textAlignment = NSTextAlignmentLeft;
+    }
+    return _tipLable;
+}
+
+-(UIView *)personBackView
+{
+    if (!_personBackView) {
+        _personBackView = [[UIView alloc] init];
+        _personBackView.backgroundColor = LKBlackColor;
+    }
+    return _personBackView;
+}
+
+-(LKMyMessageModel *)myModel
+{
+    if (!_myModel) {
+        _myModel = [[LKMyMessageModel alloc] init];
+    }
+    return _myModel;
+}
+
+-(NSDictionary *)topDict
+{
+    if (!_topDict) {
+        _topDict = [[NSDictionary alloc] init];
+    }
+    return _topDict;
+}
+@end

@@ -1,0 +1,116 @@
+//
+//  LKNet.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/18.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#ifndef LKNet_h
+#define LKNet_h
+
+//#define LKHostIP @"http://10.46.27.80:9090/hopson_manager/"
+
+//图片上传IP
+#define BaseHost  @"http://dgtest.aihsh.cn:88" // 测试环境
+/** 测试环境 */
+#define LKHostIP @"http://47.94.132.194:9090/hopson_manager/"
+
+///** 李志远 */
+//#define LKHostIP @"http://10.46.27.80:9090/hopson_manager/"
+
+/** 张亚航本地 */
+//#define LKHostIP @"http://10.46.27.178:8080/"
+
+//#define LKHostIP @"http://10.46.27.16:8080/"
+
+#define LKIconHost  @"http://filetest.aihsh.cn:9000/" // icon测试环境
+
+//图片上传接口
+#define LKUploadimg @"/front/interface/upload/imgs"
+
+//版本升级
+
+#define LKGetInfoByVersion @"front/app/manager/interface/appVersion/getInfoByVersion"
+
+
+/************************************ 品质抽查 *************************************/
+//App抽查服务
+#define LKGetCheckByBrunchId            @"front/app/manager/interface/spotCheck/getCheckByBrunchId"
+/** 抽查记录 */
+#define LKSpotCheckCountHistorylist     @"front/app/manager/interface/spotcheckcount/historylist"
+/** 抽查明细 */
+#define LKSpotCheckCountDetail          @"front/app/manager/interface/spotcheckcount/detail"
+
+
+//查询类别明细
+#define LKGetCateGroys @"front/app/manager/interface/spotCheck/getCateGroys"
+
+//根据小区id和身份id获取抽查方案
+#define LKGetCheckByBrunchId @"front/app/manager/interface/spotCheck/getCheckByBrunchId"
+
+//根据检查id获取明细规则
+#define LKGetRuleByCategroyId @"front/app/manager/interface/spotCheck/getRuleByCategroyId"
+
+//根据管家id获取小区列表
+#define LKGetCommunity @"front/app/manager/interface/spotCheck/getCommunity"
+
+//评分
+#define LKSpotCheckSubmit @"front/app/manager/interface/spotCheck/submit"
+
+
+//上传附件列表
+#define LKUploadAttchment @"front/app/manager/interface/spotCheck/uploadAttchment"
+
+//获取图片信息
+#define LKGetAttachments @"front/app/manager/interface/spotCheck/getAttachments"
+//删除图片
+#define LKDeleteAttachments @"front/app/manager/interface/spotCheck/deleteAttachments"
+
+/************************************ 工作记录模块 *************************************/
+/** 工作记录列表 */
+#define LKWorkRecordList    @"front/app/manager/interface/workRecordToApp/getByCreateTime"
+/** 添加工作记录 */
+#define LKAddWorkRecord     @"front/app/manager/interface/workRecordToApp/insert"
+/** 修改工作记录 */
+#define LKUpdateWorkRecord     @"front/app/manager/interface/workRecordToApp/update"
+/** 删除工作记录 */
+#define LKDeleteWorkRecord     @"front/app/manager/interface/workRecordToApp/delete"
+
+
+
+/************************************ 登录模块 *************************************/
+/** 登录 */
+#define LKLogin             @"front/app/manager/interface/user/login"
+/** 注册 */
+#define LKRegister          @"front/app/manager/interface/user/register"
+// 获取验证码
+#define LKSendAuthCode      @"front/app/manager/interface/user/sendAuthCode"
+/** 验证验证码 */
+#define LKVerifyAuthCode    @"front/app/manager/interface/user/verifyAuthCode"
+/** 修改密码 */
+#define LKChangePassword    @"front/app/manager/interface/user/changePassword"
+// 获取城市列表
+#define LKCityList          @"front/app/manager/interface/user/cityList"
+// 获取小区列表
+#define LKBrunchList        @"front/app/manager/interface/user/brunchList"
+// 查询角色信息
+#define LKRoleList          @"front/app/manager/interface/user/roleList"
+/** 提交审核信息 */
+#define LKAddAudit         @"front/app/manager/interface/user/addAudit"
+
+
+/************************************ 首页模块 *************************************/
+/** 首页用户最新信息 */
+#define LKGetPersonNewMessage         @"front/app/im/message/getMessageNum"
+#define LKGetPersonList               @"front/app/im/message/getCharList"
+
+
+
+/************************************ 个人中心模块 *************************************/
+/** 读取用户信息 */
+#define LKReadPersonInfo         @"/admin/app/manager/interface/user/getUserInfo"
+/** 更新用户信息 */
+#define LKUpdateUserInfo         @"/front/app/manager/interface/user/updateUserInfo"
+
+#endif /* LKNet_h */

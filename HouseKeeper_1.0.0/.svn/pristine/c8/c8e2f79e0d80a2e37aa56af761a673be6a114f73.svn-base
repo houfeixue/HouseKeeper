@@ -1,0 +1,96 @@
+//
+//  LKMergeView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKMergeView.h"
+
+@interface LKMergeView()
+
+
+@end
+
+@implementation LKMergeView
+
+
+- (void)createUI {
+    [super createUI];
+
+    [self addSubview:self.mergeImageView];
+    self.mergeImageView.frame = CGRectMake(0, 0, kScreen_Width, kScreen_Height);
+//    [self.mergeImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.top.left.right.equalTo(self);
+//        make.width.mas_equalTo(kScreen_Width);
+//        make.height.mas_equalTo(kScreen_Height);
+//    }];
+    [self addSubview:self.extraView];
+    [self.extraView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.mergeImageView.mas_bottom);
+        make.left.right.equalTo(self);
+        make.bottom.equalTo(self.mas_bottom);
+    }];
+    [self.extraView addSubview:self.locationLabel];
+    [self.extraView addSubview:self.tipLabel];
+    [self.extraView addSubview:self.timeLabel];
+    [self.timeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.extraView.mas_right).inset(LKLeftMargin);
+        make.top.mas_equalTo(LKLeftMargin);
+        make.left.mas_equalTo(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(14);
+    }];
+    [self.locationLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.extraView.mas_right).inset(LKLeftMargin);
+        make.top.equalTo(self.timeLabel.mas_bottom).offset(7);
+        make.left.mas_equalTo(LKLeftMargin);
+        make.height.mas_greaterThanOrEqualTo(14);
+    }];
+    [self.tipLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.locationLabel.mas_bottom).offset(7);
+        make.left.mas_equalTo(LKLeftMargin);
+        make.right.equalTo(self.extraView.mas_right).inset(LKLeftMargin);
+        make.bottom.equalTo(self.extraView.mas_bottom).inset(LKLeftMargin);
+    }];
+    
+}
+- (UILabel *)locationLabel {
+    if (_locationLabel == nil) {
+        _locationLabel = [[UILabel alloc] init];
+        _locationLabel.numberOfLines = 0;
+        _locationLabel.font = LK_13font;
+        _locationLabel.textColor = [UIColor whiteColor];
+    }
+    return _locationLabel;
+}
+- (UILabel *)tipLabel {
+    if (_tipLabel == nil) {
+        _tipLabel = [[UILabel alloc] init];
+        _tipLabel.numberOfLines = 0;
+        _tipLabel.font = LK_13font;
+        _tipLabel.textColor = [UIColor whiteColor];
+    }
+    return _tipLabel;
+}
+- (UILabel *)timeLabel {
+    if (_timeLabel == nil) {
+        _timeLabel = [[UILabel alloc] init];
+        _timeLabel.font = LK_13font;
+        _timeLabel.textColor = [UIColor whiteColor];
+    }
+    return _timeLabel;
+}
+- (UIImageView *)mergeImageView {
+    if (_mergeImageView == nil) {
+        _mergeImageView = [[UIImageView alloc] init];
+    }
+    return _mergeImageView;
+}
+- (UIView *)extraView {
+    if (_extraView == nil) {
+        _extraView = [[UIView alloc] init];
+    }
+    return _extraView;
+}
+@end

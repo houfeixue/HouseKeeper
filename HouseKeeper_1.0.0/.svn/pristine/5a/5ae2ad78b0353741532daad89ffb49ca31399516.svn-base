@@ -1,0 +1,54 @@
+//
+//  LKUserInfoModel.h
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/12.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@class LKUserInfoCommunityModel;
+
+@interface LKUserInfoModel : NSObject
+/**（对应是否审核） 0提交了未审核 1提交了审核通过 2审核未通过 */
+@property (nonatomic, assign) int audit;
+/** 小区集合 */
+@property (nonatomic, strong) NSArray<LKUserInfoCommunityModel *> *communities;
+@property (assign, nonatomic) int userId;
+/** 身份证号 */
+@property (nonatomic, copy) NSString *idNumber;
+/**(对应是否提交审核信息) 是否提交审核 0 未提交 1 已提交 */
+@property (assign, nonatomic) int isComplete;
+@property (copy, nonatomic) NSString *mobile;
+/** 名字 */
+@property (copy, nonatomic) NSString *name;
+@property (copy, nonatomic) NSString *nickName;
+/** 密码 */
+@property (nonatomic, copy) NSString *password;
+/** 0密码 1快速 */
+@property (nonatomic, assign) int logintype;
+@property (copy, nonatomic) NSString *token;
+/** 用户头像 */
+@property (nonatomic, copy) NSString *portrait;
+/** 手机号 */
+@property (nonatomic, copy) NSString *userName;
+
+@property (nonatomic, assign) BOOL isLoginSuccess;
+
+@end
+
+@interface LKUserInfoCommunityModel : NSObject
+/**（对应是否审核） 0提交了未审核 1提交了审核通过 2审核未通过 */
+@property (nonatomic, assign) int audit;
+/** 小区ID */
+@property (nonatomic, assign) int communityId;
+@property (nonatomic, copy) NSString *communityName;
+
+/** 小区身份的ID */
+@property (nonatomic, assign) int type;
+/** 管家身份名称 */
+@property (nonatomic, copy) NSString *name;
+/** 被拒原因 */
+@property (nonatomic, copy) NSString *auditDesc;
+@end

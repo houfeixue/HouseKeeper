@@ -1,0 +1,300 @@
+//
+//  LKPictureHandleVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPictureHandleVC.h"
+#import "LKMergeView.h"
+#import "LKPictureHandleBottomView.h"
+#import "LKLocationManager.h"
+#import "LKSelectClassityListView.h"
+#import <CoreLocation/CoreLocation.h>
+
+@interface LKPictureHandleVC ()<UITextViewDelegate,CLLocationManagerDelegate>
+{
+    CLLocationManager *locationManager;
+}
+@property (nonatomic, strong) UIScrollView *bgScrollView;
+@property (nonatomic, strong) UIImageView *pictureImageView;
+
+@property (nonatomic, strong) LKPictureHandleBottomView *bottomView;
+
+/** 合同图片view */
+@property (nonatomic, strong) LKMergeView *mergeView;
+@property (nonatomic, strong) UITextView *inputTextView;
+
+/** 当前定位位置 */
+@property (nonatomic, copy)__block NSString *currentLocationAddress;
+@property (nonatomic, strong)__block UIImage *currentSelectImage;
+@property (nonatomic, copy)__block NSString *currentTime;
+/** 相册列表 **/
+@property (nonatomic, strong) LKSelectClassityListView *selectClassifyListView;
+@property (nonatomic, copy) NSNumber *alumbSelectId;//** 相册Id*/
+
+@property (nonatomic, strong) CLLocationManager *manager;
+/** 地理编码位置 **/
+@property (nonatomic, strong) CLLocation *currentLocation;
+
+@property (nonatomic, assign) CLLocationDegrees longitude;
+@property (nonatomic, assign) CLLocationDegrees latitude;
+@end
+
+@implementation LKPictureHandleVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.manager = [LKLocationManager sharedLKLocationManager].locationManager;
+    [self getCurrentLocation:NO];
+
+    /** 拍照完成通知 */
+//    [[[NSNotificationCenter defaultCenter] rac_addObserverForName:LKTakePhotoSucessNotiation object:nil] subscribeNext:^(NSNotification * _Nullable x) {
+//        NSMutableDictionary *dict = x.object;
+//        self.currentSelectImage = [dict objectForKey:@"currentImage"];
+//        self.currentTime = [dict objectForKey:@"currentTime"];
+//        self.pictureImageView.image = self.currentSelectImage;
+//    }];
+//    locationManager = [[CLLocationManager alloc] init];
+//    locationManager = [[CLLocationManager alloc] init];
+//    locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+//    locationManager.distanceFilter = 500.0f;
+//    locationManager.delegate = self;
+//    [self getResposeLocation];
+    self.alumbSelectId = @(0);
+    [self createUI];
+    self.currentSelectImage = [self.pictureDict objectForKey:@"currentImage"];
+    self.currentTime = [self.pictureDict objectForKey:@"currentTime"];
+    self.pictureImageView.image = self.currentSelectImage;
+}
+- (void)getCurrentLocation:(BOOL)isRepeat {
+    @weakify(self);
+    if (isRepeat) {
+        [LKCustomMethods showWindowMessage:@"正在定位"];
+    }
+    [LKLocationManager getResposeLocation:^(LKLocationModel *locationModel) {
+        /** 结束菊花转圈 */
+        
+        @strongify(self);
+        if (locationModel == nil) {
+            @weakify(self);
+            if (isRepeat) {
+                [Dialog showCustomAlertViewWithTitle:@"温馨提示" message:@"请确定重新定位打开，再次定位" firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+                    @strongify(self);
+                    if (index == 1) {
+                        [self getCurrentLocation:isRepeat];
+                    }
+                }];
+            }
+        }else {
+            DLog(@"地点 ：  %@",locationModel.name);
+            self.currentLocationAddress = locationModel.name;
+        }
+    }];
+}
+- (void)createUI {
+    [self addRightNavButtonWithTitle:@"保存" action:@selector(savePicture)];
+    [self.view addSubview:self.bgScrollView];
+    [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    [self.bgScrollView addSubview:self.pictureImageView];
+    [self.pictureImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.right.equalTo(self.bgScrollView);
+        make.width.mas_equalTo(kScreen_Width);
+        make.height.mas_equalTo(kScreen_Height - kStatusBarHeight - kNavBarHeight - 130);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom).inset(130);
+    }];
+    [self createBottomView];
+}
+- (void)createBottomView {
+    [self.bgScrollView addSubview:self.bottomView];
+    [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.width.mas_equalTo(kScreen_Width);
+        make.bottom.equalTo(self.bgScrollView.mas_bottom);
+    }];
+    WS(weakSelf)
+    self.bottomView.selectPictureType = ^{
+        DLog(@"选择类型");
+        //类别名称
+        [weakSelf.view addSubview:weakSelf.selectClassifyListView];
+        weakSelf.selectClassifyListView.currentAlumbId = weakSelf.alumbSelectId;
+        [weakSelf.selectClassifyListView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.top.equalTo(weakSelf.view);
+            make.bottom.equalTo(weakSelf.view);
+            
+        }];
+        
+    };
+}
+#pragma mark - btnClick
+/** 保存图片 */
+- (void)savePicture {
+    
+    /** 保存图片  图片-时间-定位 -   描述（选填） */
+    /** 1.定位 */
+    if ([LKCustomTool isBlankString:self.currentLocationAddress] == YES) {
+        [self getCurrentLocation:YES];
+//        @weakify(self);
+//        [Dialog showCustomAlertViewWithTitle:@"温馨提示" message:@"请确定重新定位打开，再次定位" firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+//            @strongify(self);
+//            if (index == 1) {
+//                [self getResposeLocation];
+//            }
+//        }];
+        return;
+    }
+    
+    /**
+     *   self.currentSelectImage        图片
+     *   self.currentTime;              时间
+     *   self.bottomView.textView.text  描述文字
+     */
+    
+//    /** 合成图片 */
+//    self.mergeView.locationLabel.text = @"北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室";
+//    self.mergeView.tipLabel.text = self.inputTextView.text;
+//    [self.mergeView layoutIfNeeded];
+//    [self.view layoutIfNeeded];
+//    UIImage *mergeImage = [LKCustomTool makeImageWithView:self.mergeView withSize:self.mergeView.size];
+//    self.pictureImageView.image = [LKCustomTool composeImageOnMainImage:self.currentSelectPictureImage mainImageViewFrame:self.pictureImageView.frame subImageArray:@[mergeImage] subImageFrameArray:@[NSStringFromCGRect(CGRectMake(0, self.pictureImageView.height - mergeImage.size.height, self.pictureImageView.width, mergeImage.size.height))]];
+    
+    LKPictureModel *model = [[LKPictureModel alloc]init];
+    model.picName = @"";
+    model.des = self.bottomView.textView.text;
+    model.time = [NSString stringWithFormat:@"%@",self.currentTime];
+    model.area = self.currentLocationAddress;
+    model.image = self.currentSelectImage;
+    BOOL insert =  [[LKPictureDBManager shareManager]insertDataWithAlumbName:[NSString stringWithFormat:@"%@",_alumbSelectId] withData:model];
+    if (insert) {
+        [LKCustomMethods showWindowMessage:@"保存成功"];
+        [self.navigationController popViewControllerAnimated:YES];
+    }else{
+        [LKCustomMethods showWindowMessage:@"保存失败"];
+    }
+}
+#pragma mark - lazy
+- (UIImageView *)pictureImageView {
+    if (_pictureImageView == nil) {
+        _pictureImageView = [[UIImageView alloc] init];
+        _pictureImageView.contentMode = UIViewContentModeScaleAspectFit;
+        _pictureImageView.userInteractionEnabled = YES;
+        _pictureImageView.backgroundColor = LKF2Color;
+    }
+    return _pictureImageView;
+}
+- (LKPictureHandleBottomView *)bottomView {
+    if (_bottomView == nil) {
+        _bottomView = [[LKPictureHandleBottomView alloc] init];
+    }
+    return _bottomView;
+}
+
+- (LKMergeView *)mergeView {
+    if (_mergeView == nil) {
+        _mergeView = [[LKMergeView alloc] init];
+    }
+    return _mergeView;
+}
+- (UITextView *)inputTextView {
+    if (_inputTextView == nil) {
+        _inputTextView = [[UITextView alloc] init];
+    }
+    return _inputTextView;
+}
+- (UIScrollView *)bgScrollView {
+    if (_bgScrollView == nil) {
+        _bgScrollView = [[UIScrollView alloc] init];
+    }
+    return _bgScrollView;
+}
+
+-(LKSelectClassityListView *)selectClassifyListView {
+    if (_selectClassifyListView == nil) {
+        _selectClassifyListView = [[LKSelectClassityListView alloc]initWithType:@"1"];
+        _selectClassifyListView.currentAlumbId = _alumbSelectId;
+        WS(weakSelf)
+        _selectClassifyListView.selectListClick = ^(LKAlumbModel *model) {
+            DLog(@"selectListClick : %@",model);
+            weakSelf.bottomView.selectTypeLabel.text = model.name;
+            weakSelf.alumbSelectId = model.categoryId;
+            [weakSelf.selectClassifyListView removeFromSuperview];
+        };
+    }
+    return _selectClassifyListView;
+}
+
+//- (void)getResposeLocation {
+//    if ([CLLocationManager locationServicesEnabled]) {
+//        //  判断用户是否允许程序获取位置权限
+//        if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusAuthorizedWhenInUse || [CLLocationManager authorizationStatus] == kCLAuthorizationStatusAuthorizedAlways) {
+//            [locationManager requestWhenInUseAuthorization];
+//            [locationManager startUpdatingLocation];
+//        }else {
+//            //用户拒绝开启用户权限
+//            [Dialog showCustomAlertViewWithTitle:@"提示" message:@"请开启定位，以便访问您的位置信息" firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+//                if (index == 1) { /// 去设置
+//                    NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+//                    if( [[UIApplication sharedApplication] canOpenURL:url] ) {
+//                        [[UIApplication sharedApplication] openURL:url];
+//                    }
+//                }
+//            }];
+//        }
+//    }else {
+//        [Dialog showCustomAlertViewWithTitle:@"提示" message:@"请开启定位，以便访问您的位置信息" firstButtonName:@"取消" secondButtonName:@"确定" dismissHandler:^(NSInteger index) {
+//            if (index == 1) { /// 去设置
+//                NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+//                if( [[UIApplication sharedApplication] canOpenURL:url] ) {
+//                    [[UIApplication sharedApplication] openURL:url];
+//                }
+//            }
+//        }];
+//    }
+//}
+//- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations {
+//    [locationManager stopUpdatingHeading];
+//    self.currentLocation = [locations lastObject];
+//    self.longitude = _currentLocation.coordinate.longitude;
+//    self.latitude = _currentLocation.coordinate.latitude;
+//
+//    //这里的代码是为了判断didUpdateLocations调用了几次 有可能会出现多次调用 为了避免不必要的麻烦 在这里加个if判断 如果大于1.0就return
+////    NSTimeInterval locationAge = -[self.currentLocation.timestamp timeIntervalSinceNow];
+////    if (locationAge > 1.0){//如果调用已经一次，不再执行
+////        return;
+////    }
+//    CLGeocoder *geoCoder = [[CLGeocoder alloc] init];
+//    [geoCoder reverseGeocodeLocation:self.currentLocation completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
+//        if (placemarks.count > 0) {
+//            CLPlacemark *placeMark = placemarks[0];
+//            NSString *currentCity = placeMark.locality;
+//            if (!currentCity) {
+//                currentCity = placeMark.administrativeArea;
+//            }
+//            if (!currentCity) {
+//                currentCity = nil;
+////                self.currentLocationAddress = nil;
+//            }else {
+//                LKLocationModel *model = [[LKLocationModel alloc] init];
+//                model.currentLocation = self.currentLocation;
+//                model.longitude = self.longitude;
+//                model.latitude = self.latitude;
+//                model.currentCity = currentCity;
+//                model.subLocality = placeMark.subLocality;
+//                model.thoroughfare = placeMark.thoroughfare;
+//                model.name = placeMark.name;
+//                self.currentLocationAddress = model.name;
+//            }
+//        }
+//    }];
+//
+//}
+//- (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
+//    DLog(@"%@",error.localizedDescription);
+////    self.currentLocationAddress = nil;
+//}
+@end

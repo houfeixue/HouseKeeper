@@ -1,0 +1,177 @@
+//
+//  LKWorkRecordCell.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKWorkRecordCell.h"
+
+@interface LKWorkRecordCell()
+@property (nonatomic, strong) UIView *lineView;
+@property (nonatomic, strong) UILabel *timeLabel;
+@property (nonatomic, strong) UILabel *locationLabel;
+@property (nonatomic, strong) UILabel *workDescriptionLabel;
+
+@property (nonatomic, strong) UIImageView *leftTipImageView;
+
+@property (nonatomic, strong) UIImageView *firstWorkImageView;
+@property (nonatomic, strong) UIImageView *secondWorkImageView;
+@property (nonatomic, strong) UIImageView *thirdWorkImageView;
+@property (nonatomic, strong) UIImageView *fourthWorkImageView;
+
+
+@end
+
+@implementation LKWorkRecordCell
+
++ (instancetype)cellForTableView:(UITableView *)tableView reuseIdentifier:(NSString *)identifier {
+    LKWorkRecordCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
+    if (cell == nil) {
+        cell = [[LKWorkRecordCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:identifier];
+    }
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    return cell;
+}
+
+- (void)_setupViews {
+    [super _setupViews];
+    [self.contentView addSubview:self.lineView];
+    [self.lineView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(22);
+        make.width.mas_equalTo(kLineHeight);
+        make.top.equalTo(self.contentView.mas_top);
+        make.bottom.equalTo(self.contentView.mas_bottom);
+    }];
+    [self.contentView addSubview:self.leftTipImageView];
+    [self.leftTipImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.width.height.mas_equalTo(18);
+        make.top.mas_equalTo(25);
+        make.centerX.equalTo(self.lineView.mas_centerX);
+    }];
+    [self.contentView addSubview:self.timeLabel];
+    [self.timeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_equalTo(28);
+        make.height.mas_equalTo(12);
+        make.left.mas_equalTo(47);
+        make.right.equalTo(self.contentView.mas_right).inset(LKLeftMargin);
+    }];
+    [self.contentView addSubview:self.locationLabel];
+    [self.locationLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.timeLabel.mas_bottom).offset(3);
+        make.left.equalTo(self.timeLabel.mas_left);
+        make.right.equalTo(self.contentView.mas_right).inset(LKLeftMargin);
+    }];
+    [self.contentView addSubview:self.workDescriptionLabel];
+    [self.workDescriptionLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.locationLabel.mas_bottom).offset(3);
+        make.left.equalTo(self.locationLabel.mas_left);
+        make.right.equalTo(self.contentView.mas_right).inset(LKLeftMargin);
+    }];
+    [self.contentView addSubview:self.firstWorkImageView];
+    [self.firstWorkImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.workDescriptionLabel.mas_bottom).offset(10);
+        make.left.equalTo(self.workDescriptionLabel.mas_left);
+        make.width.equalTo(self.firstWorkImageView.mas_height);
+        make.bottom.equalTo(self.contentView.mas_bottom).inset(6);
+    }];
+    [self.contentView addSubview:self.secondWorkImageView];
+    [self.secondWorkImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.firstWorkImageView.mas_top);
+        make.left.equalTo(self.firstWorkImageView.mas_right).offset(5);
+        make.width.equalTo(self.firstWorkImageView.mas_width);
+        make.height.equalTo(self.firstWorkImageView.mas_height);
+    }];
+    [self.contentView addSubview:self.thirdWorkImageView];
+    [self.thirdWorkImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.secondWorkImageView.mas_top);
+        make.left.equalTo(self.secondWorkImageView.mas_right).offset(5);
+        make.width.equalTo(self.secondWorkImageView.mas_width);
+        make.height.equalTo(self.secondWorkImageView.mas_height);
+    }];
+    [self.contentView addSubview:self.fourthWorkImageView];
+    [self.fourthWorkImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.thirdWorkImageView.mas_top);
+        make.left.equalTo(self.thirdWorkImageView.mas_right).offset(5);
+        make.width.equalTo(self.thirdWorkImageView.mas_width);
+        make.height.equalTo(self.thirdWorkImageView.mas_height);
+        make.right.equalTo(self.contentView.mas_right).inset(LKLeftMargin);
+    }];
+    _firstWorkImageView.backgroundColor = [UIColor redColor];
+    _secondWorkImageView.backgroundColor = [UIColor yellowColor];
+    _thirdWorkImageView.backgroundColor = [UIColor redColor];
+    _fourthWorkImageView.backgroundColor = [UIColor purpleColor];
+
+}
+
+- (void)bindData:(LKWorkRecordListModel *)listModel {
+    self.listModel = listModel;
+}
+
+//lazy
+- (UIView *)lineView {
+    if (_lineView == nil) {
+        _lineView = [[UIView alloc] init];
+        _lineView.backgroundColor = [ColorUtil colorWithHex:@"#E6E6E6"];
+    }
+    return _lineView;
+}
+- (UILabel *)timeLabel {
+    if (_timeLabel == nil) {
+        _timeLabel = [[UILabel alloc]init];
+        _timeLabel.font = LK_12font;
+        _timeLabel.textColor = [ColorUtil colorWithHex:@"#777777"];
+    }
+    return _timeLabel;
+}
+- (UILabel *)locationLabel {
+    if (_locationLabel == nil) {
+        _locationLabel = [[UILabel alloc]init];
+        _locationLabel.font = LK_12font;
+        _locationLabel.textColor = [ColorUtil colorWithHex:@"#777777"];
+        _locationLabel.numberOfLines = 2;
+    }
+    return _locationLabel;
+}
+- (UILabel *)workDescriptionLabel {
+    if (_workDescriptionLabel == nil) {
+        _workDescriptionLabel = [[UILabel alloc] init];
+        _workDescriptionLabel.font = LK_14font;
+        _workDescriptionLabel.textColor = LKGrayColor;
+        _workDescriptionLabel.numberOfLines = 3;
+    }
+    return _workDescriptionLabel;
+}
+- (UIImageView *)leftTipImageView {
+    if (_leftTipImageView == nil) {
+        _leftTipImageView = [[UIImageView alloc] init];
+    }
+    return _leftTipImageView;
+}
+- (UIImageView *)firstWorkImageView {
+    if (_firstWorkImageView == nil) {
+        _firstWorkImageView = [[UIImageView alloc] init];
+    }
+    return _firstWorkImageView;
+}
+- (UIImageView *)secondWorkImageView {
+    if (_secondWorkImageView == nil) {
+        _secondWorkImageView = [[UIImageView alloc] init];
+    }
+    return _secondWorkImageView;
+}
+- (UIImageView *)thirdWorkImageView {
+    if (_thirdWorkImageView == nil) {
+        _thirdWorkImageView = [[UIImageView alloc] init];
+    }
+    return _thirdWorkImageView;
+}
+- (UIImageView *)fourthWorkImageView {
+    if (_fourthWorkImageView == nil) {
+        _fourthWorkImageView = [[UIImageView alloc] init];
+    }
+    return _fourthWorkImageView;
+}
+
+@end

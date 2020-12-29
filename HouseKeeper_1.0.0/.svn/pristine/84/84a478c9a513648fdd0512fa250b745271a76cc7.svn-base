@@ -1,0 +1,99 @@
+//
+//  PrefixHeader.pch
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/10.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#ifndef PrefixHeader_pch
+#define PrefixHeader_pch
+
+// Include any system framework and library headers here that should be included in all compilation units.
+// You will also need to set the Prefix Header build setting of one or more of your targets to reference this file.
+
+//第三方
+//#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveObjC/ReactiveObjC.h>
+#import <MJRefresh/MJRefresh.h>
+#import <Masonry/Masonry.h>
+#import <MBProgressHUD/MBProgressHUD.h>
+#import "UIViewController+MBPHUD.h"
+#import "UIView+MBPHUD.h"
+#import "Reachability.h"
+#import <YYText/YYText.h>
+#import <SDWebImage/UIImageView+WebCache.h>
+#import <SDWebImage/UIButton+WebCache.h>
+
+/** 单例 */
+#import "LKSingleton.h"
+
+// 自定义的header
+#import "MJChiBaoZiHeader.h"
+#import "MJChiBaoZiFooter.h"
+#import "MJChiBaoZiFooter2.h"
+#import "MJDIYHeader.h"
+#import "MJDIYAutoFooter.h"
+#import "MJDIYBackFooter.h"
+//请求接口
+#import "LKHttpRequest.h"
+#import "LKEntcry.h"
+#import "LKNet.h"
+
+
+//公共类
+/** Extension */
+#import "UIImage+Extra.h"
+#import "NSDate+Extension.h"
+#import "UIView+Extension.h"
+#import "UIFont+Extension.h"
+#import "UIDevice+Addtion.h"
+#import "UITableView+FDTemplateLayoutCell.h"
+#import "NSDictionary+Safe.h"
+#import "NSString+Extension.h"
+#import "UIButton+Extension.h"
+#import "UILabel+Extension.h"
+
+/** CONST */
+#import "LKDefineHeader.h"
+#import "ColorUtil.h"
+#import "LKFrame.h"
+#import "LKFont.h"
+
+/** 工具类 */
+#import "LKCustomTool.h"
+#import "LKCameraTool.h"
+
+#import "LKTableSectionObject.h"
+#import "LKBaseTableViewCell.h"
+#import "LKBaseTableViewModel.h"
+#import "LKCustomMethods.h"
+#import "ViewFactory.h"
+#import "MJExtension.h"
+#import <FMDB/FMDB.h>
+#import "LKBaseCollectionViewModel.h"
+#import "LKBaseCollectionViewCell.h"
+#import "LKCollectionSectionObject.h"
+#import "CustomActionSheet.h"
+
+#import "HYBImageCliped.h"
+#import "Dialog.h"
+#import "LKAlertView.h"
+#import "LKInputTextView.h"
+#import "THPickerView.h"
+#import "UserDefaultsHelper.h"
+
+
+
+//用户信息
+#import "LKUserInfoModel.h"
+
+//图片信息
+#import "LKPictureModel.h"
+#import "LKPictureDBManager.h"
+#import "LKImageFileManager.h"
+#import "LKAlumbModel.h"
+
+
+
+#endif /* PrefixHeader_pch */

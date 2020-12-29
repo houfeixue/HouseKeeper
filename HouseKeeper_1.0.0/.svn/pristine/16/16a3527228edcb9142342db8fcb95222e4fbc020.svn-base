@@ -1,0 +1,100 @@
+//
+//  LKLoginHeaderView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/18.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKLoginHeaderView.h"
+
+@interface LKLoginHeaderView()
+
+@property (nonatomic, strong) UIImageView *tipImageView;
+@property (nonatomic, strong) UIButton *currentSelectBtn;
+
+@end
+
+@implementation LKLoginHeaderView
+
+- (void)createUI {
+    [super createUI];
+    self.btnClickSubject = [RACSubject subject];
+    self.backgroundColor = LKBlackColor;
+    [self addSubview:self.accountLoginBtn];
+    [self addSubview:self.quickLoginBtn];
+    [self addSubview:self.userHeaderImageView];
+    [self addSubview:self.tipImageView];
+    [self.userHeaderImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.equalTo(self.mas_centerX);
+        make.centerY.equalTo(self.mas_centerY);
+        make.height.width.mas_equalTo(64);
+    }];
+    [self.accountLoginBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.mas_left);
+        make.height.mas_equalTo(34);
+        make.bottom.equalTo(self.mas_bottom).inset(8);
+    }];
+    [self.quickLoginBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.accountLoginBtn.mas_right);
+        make.height.equalTo(self.accountLoginBtn.mas_height);
+        make.bottom.equalTo(self.mas_bottom).inset(8);
+        make.right.equalTo(self.mas_right);
+        make.width.equalTo(self.accountLoginBtn.mas_width);
+    }];
+    [self.tipImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.equalTo(self.accountLoginBtn.mas_centerX);
+        make.bottom.equalTo(self.mas_bottom);
+        make.width.mas_equalTo(17);
+        make.height.mas_equalTo(8);
+    }];
+    self.currentSelectBtn = self.accountLoginBtn;
+    [self.userHeaderImageView hyb_addCornerRadius:32];
+}
+- (void)btnClick:(UIButton *)currentBtn {
+    [UIView animateWithDuration:2 animations:^{
+        [self.tipImageView mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.centerX.equalTo(currentBtn.mas_centerX);
+            make.bottom.equalTo(self.mas_bottom);
+            make.width.mas_equalTo(17);
+            make.height.mas_equalTo(8);
+        }];
+    }];
+    [self layoutIfNeeded];
+    [self.btnClickSubject sendNext:@(currentBtn.tag)];
+}
+#pragma mark - lazy
+- (UIButton *)accountLoginBtn {
+    if (_accountLoginBtn == nil) {
+        _accountLoginBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_accountLoginBtn setTitle:@"账号登录" forState:UIControlStateNormal];
+        [_accountLoginBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        _accountLoginBtn.tag = 0;
+        [_accountLoginBtn addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _accountLoginBtn;
+}
+- (UIButton *)quickLoginBtn {
+    if (_quickLoginBtn == nil) {
+        _quickLoginBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_quickLoginBtn setTitle:@"快速登录" forState:UIControlStateNormal];
+        [_quickLoginBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        _quickLoginBtn.tag = 1;
+        [_quickLoginBtn addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _quickLoginBtn;
+}
+- (UIImageView *)userHeaderImageView {
+    if (_userHeaderImageView == nil) {
+        _userHeaderImageView = [[UIImageView alloc] init];
+    }
+    return _userHeaderImageView;
+}
+- (UIImageView *)tipImageView {
+    if (_tipImageView == nil) {
+        _tipImageView = [[UIImageView alloc] init];
+        _tipImageView.image = [UIImage imageNamed:@"login_tipImage.png"];
+    }
+    return _tipImageView;
+}
+@end

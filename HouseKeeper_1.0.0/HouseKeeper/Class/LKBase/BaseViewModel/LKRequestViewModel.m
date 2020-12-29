@@ -1,0 +1,76 @@
+//
+//  LKRequestViewModel.m
+//  Project
+//
+//  Created by heshenghui on 2018/7/1.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKRequestViewModel.h"
+
+@implementation LKRequestViewModel
+
+-(void)requestUrl:(NSString *) url withData:(NSDictionary *)dict withRequestType:(RequestType)requestType withTag:(NSInteger )tag showHub:(BOOL)show
+{
+    
+    NSLog(@"%@-----------%@",url,dict);
+    
+    if (requestType == RequestType_Get) {
+        
+        [[LKHttpRequest request] GET:url parameters:dict tag:tag success:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSString * _Nonnull responseString) {
+            
+            [self.requestViewModelOKSubject sendNext:@[@(tag),responseString]];
+            
+            //            [self.requestViewModelOKSubject sendCompleted];
+        } failure:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSError * _Nonnull error) {
+            [self.requestViewModelErrorSubject sendNext:@[@(tag),error]];
+            //            [self.requestViewModelErrorSubject sendCompleted];
+        }];
+    }else if (requestType == RequestType_Post){
+        if (show) {
+            [LKCustomMethods showMBMBHUBView:self.vcView];
+        }
+        [[LKHttpRequest request]POST:url parameters:dict tag:tag success:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSString * _Nonnull responseString) {
+            
+            if (show) {
+                [LKCustomMethods hideMBMBHUBView:self.vcView];
+            }
+            [self.requestViewModelOKSubject sendNext:@[@(tag),responseString,dict]];
+
+        } failure:^(LKHttpRequest * _Nonnull request, NSInteger tag, NSError * _Nonnull error) {
+            if (show) {
+                [LKCustomMethods hideMBMBHUBView:self.vcView];
+            }
+            DLog(@"tag : %ld  error :%@",(long)tag,error.localizedDescription);
+            [self.requestViewModelErrorSubject sendNext:@[@(tag),error]];
+            
+            
+        }];
+    }
+}
+
+-(void)requestUrl:(NSString *) url withData:(NSDictionary *)dict withRequestType:(RequestType)requestType withTag:(NSInteger )tag
+{
+    
+    [self requestUrl:url withData:dict withRequestType:requestType withTag:tag showHub:YES];
+   
+   
+}
+//lazy
+-(RACSubject *)requestViewModelOKSubject
+{
+    if (!_requestViewModelOKSubject) {
+        _requestViewModelOKSubject = [RACSubject subject];
+    }
+    return _requestViewModelOKSubject;
+}
+
+-(RACSubject *)requestViewModelErrorSubject
+{
+    if (!_requestViewModelErrorSubject) {
+        _requestViewModelErrorSubject = [RACSubject subject];
+    }
+    return _requestViewModelErrorSubject;
+}
+
+@end

@@ -1,0 +1,115 @@
+//
+//  LKQualityHistoryVC.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityHistoryVC.h"
+#import "LKQualityHistoryViewModel.h"
+#import "LKQualityHistoryViewCell.h"
+#import "LKQualityDetailViewController.h"
+#import "LKQualityReportViewController.h"
+#import "LKQualityHistoryHeaderView.h"
+
+@interface LKQualityHistoryVC ()
+@property (nonatomic, strong) LKQualityHistoryViewModel *qualityHistoryViewModel;
+@property (nonatomic, strong) LKQualityHistoryHeaderView *headerView;
+@property (nonatomic, copy) NSString *currentSelectTime;
+@property (nonatomic, strong) NSDateFormatter *dataFormatter;
+@property (nonatomic, strong) NSMutableArray *timeDataArray;
+@end
+
+@implementation LKQualityHistoryVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self createUI];
+    [self bindViewModelData];
+}
+- (void)createUI {
+    [self setNavBarTitle:@"抽查记录"];
+    [self.view addSubview:self.headerView];
+    [self.headerView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.equalTo(self.view);
+        make.height.mas_equalTo(35);
+    }];
+    [self.mainTableView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.bottom.equalTo(self.view);
+        make.top.equalTo(self.headerView.mas_bottom);
+    }];
+    [self conFigTableLoadMoreData];
+    @weakify(self);
+    self.headerView.selectTime = ^(NSString *selectTime) {
+        @strongify(self);
+        self.currentSelectTime = selectTime;
+    };
+}
+- (void)bindViewModelData {
+    @weakify(self);
+    [self.qualityHistoryViewModel.refreshLoadData subscribeNext:^(id x) {
+        //加载数据
+        @strongify(self)
+        self.qualityHistoryViewModel.requestUrl = LKSpotCheckCountHistorylist;
+        //        self.qualityHistoryViewModel.requestDict = @{@"currentMonth":self.currentMonth,@"regionId":self.regionId,@"pageSize":@10,@"pageNo":@(self.dataSource.pageIndex),@"begin":@"0"};
+        self.qualityHistoryViewModel.requestDict = @{@"currentMonth":@"2018-07",@"regionId":@"266",@"pageSize":@(self.dataSource.pageSize),@"pageNo":@(self.dataSource.pageIndex),@"begin":@"0"};
+    }];
+    [self.qualityHistoryViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        if ([x isKindOfClass:[NSDictionary class]]) {
+            NSDictionary * dict =(NSDictionary *)x;
+            NSString * key = [dict stringForKey:@"key"];
+            if ([key isEqualToString:@"detail"]) {
+                LKQualityHistoryModel *historyModel = [dict objectForKey:@"data"];
+                LKQualityDetailViewController * vc =[[LKQualityDetailViewController alloc] init];
+                vc.historyModel = historyModel;
+                [self.navigationController pushViewController:vc animated:YES];
+            }else if ([key isEqualToString:@"look"]){
+                LKQualityReportViewController * vc = [[LKQualityReportViewController alloc]init];
+                [self.navigationController pushViewController:vc animated:YES];
+            }
+        }
+    }];
+}
+- (void)getTimeData {
+    NSString *startTime = @"2018-01";
+}
+/**  */
+-(Class)tableCellClass
+{
+    return [LKQualityHistoryViewCell class];
+}
+
+- (LKBaseTableViewModel*)createDataSource
+{
+    return self.qualityHistoryViewModel;
+}
+//lazy
+-(LKQualityHistoryViewModel *)qualityHistoryViewModel
+{
+    if (_qualityHistoryViewModel == nil) {
+        _qualityHistoryViewModel = [[LKQualityHistoryViewModel alloc]init];
+    }
+    return _qualityHistoryViewModel;
+}
+- (LKQualityHistoryHeaderView *)headerView {
+    if (_headerView == nil) {
+        _headerView = [[LKQualityHistoryHeaderView alloc] init];
+    }
+    return _headerView;
+}
+- (NSDateFormatter *)dataFormatter {
+    if (_dataFormatter == nil) {
+        _dataFormatter = [[NSDateFormatter alloc] init];
+    }
+    return _dataFormatter;
+}
+- (NSMutableArray *)timeDataArray {
+    if (_timeDataArray == nil) {
+        _timeDataArray = [NSMutableArray array];
+    }
+    return _timeDataArray;
+}
+@end

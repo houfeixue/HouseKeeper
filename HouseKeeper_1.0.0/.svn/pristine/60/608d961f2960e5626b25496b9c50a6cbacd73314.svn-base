@@ -1,0 +1,130 @@
+//
+//  LKPicturesViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPicturesViewController.h"
+#import "LKPictureCell.h"
+#import "LKPicturesViewModel.h"
+#import "LKPicturesHeadView.h"
+#import "LKPicturesSectionHeaderReusableView.h"
+
+
+@interface LKPicturesViewController ()
+
+@property(nonatomic,strong)LKPicturesViewModel *pictureViewModel;
+@property(nonatomic,strong)LKPicturesHeadView *picturesHeadView;
+
+@end
+
+@implementation LKPicturesViewController
+
+//设置代理
+- (LKBaseCollectionViewModel*)createDataSource
+{
+    return self.pictureViewModel;
+    
+}
+- (UICollectionViewFlowLayout*)createLayOut
+{
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc]init];
+    layout.itemSize = CGSizeMake((kScreen_Width-2*6)/3,(kScreen_Width-2*6)/3);
+    layout.minimumLineSpacing = 6;
+    layout.minimumInteritemSpacing = 6;
+    layout.headerReferenceSize = CGSizeMake(kScreen_Width,50);
+    layout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    return layout;
+}
+- (Class)collectionCellClass
+{
+    return [LKPictureCell class];
+}
+
+- (Class)collectionHeaderReusableViewClass//section  header
+{
+    return [LKPicturesSectionHeaderReusableView class];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self _setUpView];
+    
+    self.pictureViewModel.categoryId = _categoryId;
+    
+    @weakify(self);
+    
+    [self.pictureViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        
+        if ([x isKindOfClass:[NSString class]]) {
+            NSString * type = (NSString *)x;
+            if ([type isEqualToString:@"MainCollectReload"]) {
+                [self.mainCollectionView reloadData];
+            }
+        }
+    }];
+}
+
+-(void)_setUpView
+{
+    //导航栏
+    [self setNavBarTitle:_name];
+     //view
+    [self.view addSubview:self.picturesHeadView];
+    NSInteger count = [[LKPictureDBManager shareManager]fetchAlumbCountFromCategory:_categoryId];
+    [self.picturesHeadView conDataName:_name withCount:[NSString stringWithFormat:@"%ld",count]];
+    [self.picturesHeadView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.equalTo(self.view);
+        make.height.equalTo(@(40));
+        
+    }];
+    [self.mainCollectionView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.view);
+        make.top.equalTo(self.picturesHeadView.mas_bottom);
+        if (LK_IS_IOS_11) {
+            make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+        }else{
+            make.bottom.equalTo(self.view.mas_bottom);
+        }
+    }];
+    
+
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+//lazy
+
+-(LKPicturesViewModel *)pictureViewModel
+{
+    if (_pictureViewModel == nil) {
+        _pictureViewModel = [[LKPicturesViewModel alloc]init];
+    }
+    return _pictureViewModel;
+}
+
+-(LKPicturesHeadView *)picturesHeadView{
+    if (_picturesHeadView == nil) {
+        _picturesHeadView = [[LKPicturesHeadView alloc]init];
+    }
+    return _picturesHeadView;
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

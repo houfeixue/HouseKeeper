@@ -1,0 +1,345 @@
+//
+//  UIImage+Extra.m
+//  MQ
+//
+//  Created by tianlibin on 14/12/29.
+//  Copyright (c) 2014年 ilovedev. All rights reserved.
+//
+
+#import "UIImage+Extra.h"
+
+#import <UIKit/UIImageView.h>
+#import <UIKit/UIGraphics.h>
+#import <QuartzCore/CALayer.h>
+
+@implementation UIImage (Extra)
+
+
++ (UIImage *)SDResizeWithIma:(UIImage *)image  isOther:(BOOL) isOther
+{
+    CGFloat w ;
+    CGFloat h ;
+    if(isOther){
+         w =image.size.width*0.7;
+         h = image.size.height * 0.7;
+         return [image resizableImageWithCapInsets: UIEdgeInsetsMake(h, w, h, w)];
+    }else
+    {
+        w =image.size.width*0.7;
+        h = image.size.height * 0.7;
+        return [image resizableImageWithCapInsets: UIEdgeInsetsMake(h, w, h, w)];
+    }
+   
+   
+}
+
++ (UIImage*)resizebleImageNamed:(NSString*)name
+{
+    UIImage* result = nil;
+    UIImage* image = [UIImage imageNamed:name];
+    if (image != nil) {
+        CGSize s = image.size;
+        UIEdgeInsets inset = UIEdgeInsetsMake(s.height/2.0f-1, s.width/2.0f-1, s.height/2.0+1, s.width/2.0+1);
+        result = [image resizableImageWithCapInsets:inset];
+    }
+    
+    return result;
+}
+
++ (UIImage*)resizebleImageNamed:(NSString*)name insets:(UIEdgeInsets)insets;
+{
+    UIImage* result = nil;
+    UIImage* image = [UIImage imageNamed:name];
+    if (image != nil) {
+        result = [image resizableImageWithCapInsets:insets];
+    }
+    
+    return result;
+}
+
++ (UIImage*)imageWithName:(NSString*)name size:(CGSize)size
+{
+    UIImage* result = nil;
+    UIImage* image = [UIImage imageNamed:name];
+    if (image != nil) {
+        CGSize s = image.size;
+        UIEdgeInsets inset = UIEdgeInsetsMake(s.height/2.0f-1, s.width/2.0f-1, s.height/2.0+1, s.width/2.0+1);
+        result = [image resizableImageWithCapInsets:inset];
+        CGRect rc = CGRectZero;
+        rc.size = size;
+        if (rc.size.width < 0.5f) {
+            rc.size.width = s.width;
+        }
+        if (rc.size.height < 0.5f) {
+            rc.size.height = s.height;
+        }
+        UIImageView* view = [[UIImageView alloc] initWithFrame:rc];
+        view.image = result;
+        
+        result = [self imageWithView:view];
+    }
+    
+    return result;
+}
+
++ (UIImage*)imageWithColor:(UIColor*)color size:(CGSize)size
+{
+    CGRect frame = CGRectZero;
+    
+    BOOL resizeable = NO;
+    if (CGSizeEqualToSize(size, CGSizeZero)) {
+        size = CGSizeMake(5.0f, 5.0f);
+        resizeable = YES;
+    }
+    
+    frame.size = size;
+    UIView* view = [[UIView alloc] initWithFrame:frame];
+    view.backgroundColor = color;
+    
+    UIGraphicsBeginImageContextWithOptions(size, NO, 0.0);
+    [view.layer renderInContext:UIGraphicsGetCurrentContext()];
+    
+    UIImage* image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    if (resizeable) {
+        UIEdgeInsets inset = UIEdgeInsetsMake(size.height/2.0f-1, size.width/2.0f-1, size.height/2.0+1, size.width/2.0+1);
+        UIImage* result = [image resizableImageWithCapInsets:inset];
+        return result;
+    }
+    else {
+        return image;
+    }
+}
+
++ (UIImage*)imageWithView:(UIView*)view
+{
+    CGSize s = view.bounds.size;
+    UIGraphicsBeginImageContextWithOptions(s, NO, 0.0);
+    [view.layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage*image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage*)circleImageWithName:(NSString*)name
+{
+    UIImage* img = [UIImage imageNamed:name];
+    return [UIImage circelImageWithImage:img];
+}
+
++ (UIImage*)circelImageWithImage:(UIImage*)image
+{
+    UIGraphicsBeginImageContextWithOptions(image.size, NO, 1.0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetLineWidth(context, 2.0f);
+    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
+    CGRect rect = CGRectMake(0.0f, 0.0f, image.size.width, image.size.height);
+    CGContextAddEllipseInRect(context, rect);
+    CGContextClip(context);
+    
+    [image drawInRect:rect];
+    CGContextAddEllipseInRect(context, rect);
+    CGContextStrokePath(context);
+    UIImage *imgNew = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return imgNew;
+}
+
++ (UIImage *)scaleToSize:(UIImage *)img size:(CGSize)size{
+    // 创建一个bitmap的context
+    // 并把它设置成为当前正在使用的context
+    UIGraphicsBeginImageContext(size);
+    // 绘制改变大小的图片
+    [img drawInRect:CGRectMake(0, 0, size.width, size.height)];
+    // 从当前context中创建一个改变大小后的图片
+    UIImage* scaledImage = UIGraphicsGetImageFromCurrentImageContext();
+    // 使当前的context出堆栈
+    UIGraphicsEndImageContext();
+    // 返回新的改变大小后的图片
+    return scaledImage;
+}
+
+
+//+ (CGSize)rescaleImageToSize:(UIImage *)image max:(NSInteger)max
+//{
+//    CGSize size = image.size;
+//    CGFloat minLength = MIN(size.width, size.height);
+//    CGFloat otherLenth= 0;
+//    
+//    if (minLength <= max) {//最小边小于规定大小，则不做压缩
+//        
+//        return size;
+//    }else{
+//        
+//        if (minLength == size.width) {
+//            minLength = max;
+//            otherLenth = max*size.height/size.width;
+//            return CGSizeMake(minLength, otherLenth);
+//        }else{
+//            minLength = max;
+//            otherLenth = max*size.width/size.height;
+//            return CGSizeMake(otherLenth, minLength);
+//        }
+//    }
+//    
+//}
++ (CGSize)rescaleImageToSize:(UIImage *)image max:(NSInteger)max
+{
+    CGSize size = image.size;
+    CGFloat maxLength = MAX(size.width, size.height);
+    CGFloat otherLenth= 0;
+    
+    if (maxLength <= max) {//最小边小于规定大小，则不做压缩
+        return size;
+    }
+    else {
+        if (maxLength == size.width) {
+            maxLength = max;
+            otherLenth = max*size.height/size.width;
+            return CGSizeMake(maxLength, otherLenth);
+        }
+        else {
+            maxLength = max;
+            otherLenth = max*size.width/size.height;
+            return CGSizeMake(otherLenth, maxLength);
+        }
+    }
+    
+}
+
+
++ (UIImage *)scaleAndRotateImage:(UIImage*) image size:(NSInteger)size
+{
+    NSInteger kMaxResolution = size; // Or whatever
+    
+    CGImageRef imgRef = image.CGImage;
+    
+    CGFloat width = CGImageGetWidth(imgRef);
+    CGFloat height = CGImageGetHeight(imgRef);
+    
+    CGAffineTransform transform = CGAffineTransformIdentity;
+    CGRect bounds = CGRectMake(0, 0, width, height);
+    if (width > kMaxResolution || height > kMaxResolution) {
+        CGFloat ratio = width/height;
+        if (ratio > 1) {
+            bounds.size.width = kMaxResolution;
+            bounds.size.height = bounds.size.width / ratio;
+        }
+        else {
+            bounds.size.height = kMaxResolution;
+            bounds.size.width = bounds.size.height * ratio;
+        }
+    }
+    
+    CGFloat scaleRatio = bounds.size.width / width;
+    CGSize imageSize = CGSizeMake(CGImageGetWidth(imgRef), CGImageGetHeight(imgRef));
+    CGFloat boundHeight;
+    UIImageOrientation orient = image.imageOrientation;
+    switch(orient) {
+            
+        case UIImageOrientationUp: //EXIF = 1
+            transform = CGAffineTransformIdentity;
+            break;
+            
+        case UIImageOrientationUpMirrored: //EXIF = 2
+            transform = CGAffineTransformMakeTranslation(imageSize.width, 0.0);
+            transform = CGAffineTransformScale(transform, -1.0, 1.0);
+            break;
+            
+        case UIImageOrientationDown: //EXIF = 3
+            transform = CGAffineTransformMakeTranslation(imageSize.width, imageSize.height);
+            transform = CGAffineTransformRotate(transform, M_PI);
+            break;
+            
+        case UIImageOrientationDownMirrored: //EXIF = 4
+            transform = CGAffineTransformMakeTranslation(0.0, imageSize.height);
+            transform = CGAffineTransformScale(transform, 1.0, -1.0);
+            break;
+            
+        case UIImageOrientationLeftMirrored: //EXIF = 5
+            boundHeight = bounds.size.height;
+            bounds.size.height = bounds.size.width;
+            bounds.size.width = boundHeight;
+            transform = CGAffineTransformMakeTranslation(imageSize.height, imageSize.width);
+            transform = CGAffineTransformScale(transform, -1.0, 1.0);
+            transform = CGAffineTransformRotate(transform, 3.0 * M_PI / 2.0);
+            break;
+            
+        case UIImageOrientationLeft: //EXIF = 6
+            boundHeight = bounds.size.height;
+            bounds.size.height = bounds.size.width;
+            bounds.size.width = boundHeight;
+            transform = CGAffineTransformMakeTranslation(0.0, imageSize.width);
+            transform = CGAffineTransformRotate(transform, 3.0 * M_PI / 2.0);
+            break;
+            
+        case UIImageOrientationRightMirrored: //EXIF = 7
+            boundHeight = bounds.size.height;
+            bounds.size.height = bounds.size.width;
+            bounds.size.width = boundHeight;
+            transform = CGAffineTransformMakeScale(-1.0, 1.0);
+            transform = CGAffineTransformRotate(transform, M_PI / 2.0);
+            break;
+            
+        case UIImageOrientationRight: //EXIF = 8
+            boundHeight = bounds.size.height;
+            bounds.size.height = bounds.size.width;
+            bounds.size.width = boundHeight;
+            transform = CGAffineTransformMakeTranslation(imageSize.height, 0.0);
+            transform = CGAffineTransformRotate(transform, M_PI / 2.0);
+            break;
+            
+        default:
+            [NSException raise:NSInternalInconsistencyException format:@"Invalid image orientation"];
+            
+    }
+    
+    UIGraphicsBeginImageContext(bounds.size);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    if (orient == UIImageOrientationRight || orient == UIImageOrientationLeft) {
+        CGContextScaleCTM(context, -scaleRatio, scaleRatio);
+        CGContextTranslateCTM(context, -height, 0);
+    }
+    else {
+        CGContextScaleCTM(context, scaleRatio, -scaleRatio);
+        CGContextTranslateCTM(context, 0, -height);
+    }
+    
+    CGContextConcatCTM(context, transform);
+    
+    CGContextDrawImage(UIGraphicsGetCurrentContext(), CGRectMake(0, 0, width, height), imgRef);
+    UIImage *imageCopy = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return imageCopy;
+    
+}
+
+-(NSString *)UIImageToBase64Str:(UIImage *) image;
+{
+    NSData *data = UIImageJPEGRepresentation(image, 1.0f);
+    NSString *encodedImageStr = [data base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
+    return encodedImageStr;
+}
+
++ (NSData *)imageChangeToData:(UIImage *)image{
+
+    return  UIImageJPEGRepresentation(image, 0.08f);
+}
+
++ (UIImage *)pullImage:(NSString *)imageName
+{
+    return [self pullImage:imageName leftRatio:0.5 topRatio:0.5];
+}
+
++ (UIImage *)pullImage:(NSString *)imageName leftRatio:(CGFloat)leftratio topRatio:(CGFloat)topratio
+{
+    UIImage *pullImage = [UIImage imageNamed:imageName];
+    CGFloat left = pullImage.size.width * leftratio;
+    CGFloat top = pullImage.size.height * topratio;
+    return [pullImage stretchableImageWithLeftCapWidth:left topCapHeight:top];
+}
+@end

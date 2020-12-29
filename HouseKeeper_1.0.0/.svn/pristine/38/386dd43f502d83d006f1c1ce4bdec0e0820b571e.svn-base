@@ -1,0 +1,114 @@
+//
+//  LKPictureViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/13.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKLookPictureViewModel.h"
+#import "LKPictureCell.h"
+#import "LKPictureSelectModel.h"
+#import "LKPicHeaderReusableView.h"
+
+@implementation LKLookPictureViewModel
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setUp];
+    }
+    return self;
+}
+
+-(void)setUp{
+    
+    
+    @weakify(self)
+    [[RACObserve(self,categoryId)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        [self.dataArray removeAllObjects];
+        NSArray *alumbArray = [[LKPictureDBManager shareManager]fetchAlumbData];
+        for (int i=0; i<alumbArray.count; i++) {
+            LKCollectionSectionObject * section = [[LKCollectionSectionObject alloc]init];
+            LKAlumbModel * model = [alumbArray objectAtIndex:i];
+            section.itemArray = [NSMutableArray arrayWithArray:[[LKPictureDBManager shareManager]fetchAllAlumbName:model.categoryId]] ;
+            [self.dataArray addObject:section];
+        }
+        //todo 处理数据
+        [self.cellClickSubject sendNext:@"MainCollectReload"];
+    }];
+    
+}
+
+
+//#pragma collect delegate
+
+- (__kindof UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    LKPictureCell * cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"LKPictureCell" forIndexPath:indexPath];
+    
+    LKCollectionSectionObject * sectionObject = [self.dataArray objectAtIndex:indexPath.section];
+    LKPictureSelectModel * model = [sectionObject.itemArray objectAtIndex:indexPath.row];
+    cell.selectBtn.hidden = YES;
+    [cell conFigCellwithData:model atIndex:indexPath];
+    WS(weakSelf)
+    cell.pictureSelectBtnClick = ^(NSString * _Nonnull status) {
+        
+        model.isSelect = !model.isSelect;
+        [sectionObject.itemArray replaceObjectAtIndex:indexPath.row withObject:model];
+        
+        [weakSelf.cellClickSubject sendNext:@"MainCollectReload"];
+        
+    };
+    
+    return cell;
+    
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    CGFloat width = ((kScreen_Width-80-10+LKRightMargin) - 2*6) / 3;
+    
+    return CGSizeMake(width, width);
+    
+}
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    if ([kind isEqualToString:UICollectionElementKindSectionHeader]) {
+        LKPicHeaderReusableView * headerView =[collectionView dequeueReusableSupplementaryViewOfKind:
+                                                    UICollectionElementKindSectionHeader withReuseIdentifier:@"LKPicHeaderReusableView" forIndexPath:indexPath];
+        
+        return headerView;
+    }
+    
+    return nil;
+}
+// 设置间距，不设置默认间距比较大，导致一行放不了三个cell
+
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)section{
+    
+    return 6;
+    
+}
+
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)section{
+    
+    return 0;
+    
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    DLog(@"%ld --%ld",indexPath.row ,indexPath.section);
+    
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didEndDisplayingCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    [self.cellClickSubject sendNext:indexPath];
+    
+}
+
+@end

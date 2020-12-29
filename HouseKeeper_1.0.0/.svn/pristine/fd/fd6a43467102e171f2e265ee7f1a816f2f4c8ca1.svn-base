@@ -1,0 +1,86 @@
+//
+//  LKAlumbsViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAlumbsViewController.h"
+#import "LKAlumbsViewModel.h"
+#import "LKAlumbVIewCell.h"
+#import "LKPicturesViewController.h"
+
+@interface LKAlumbsViewController ()
+@property (nonatomic, strong) LKAlumbsViewModel *alumbsViewModel;
+
+@end
+
+@implementation LKAlumbsViewController
+/**  */
+-(Class)tableCellClass
+{
+    return [LKAlumbVIewCell class];
+}
+
+- (LKBaseTableViewModel*)createDataSource
+{
+    return self.alumbsViewModel;
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self setNavBarTitle:@"相册"];
+    
+    @weakify(self);
+    
+    [self.alumbsViewModel.cellClickSubject subscribeNext:^(id x) {
+        @strongify(self)
+        if ([x isKindOfClass:[NSString class]]) {
+            NSString * str = x;
+            if ([str isEqualToString:@"mainViewRolad"]) {
+                [self.mainTableView reloadData];
+            }
+        }else if ([x isKindOfClass:[NSDictionary class]]){
+            NSDictionary * dict = (NSDictionary *)x;
+            NSString * type = [dict objectForKey:@"type"];
+            if ([type isEqualToString:@"goDetail"]) {
+
+                LKPicturesViewController * lvc =[[LKPicturesViewController alloc]init];
+                lvc.name = [dict objectForKey:@"name"];
+                lvc.categoryId = [dict objectForKey:@"categoryId"];
+                [self.navigationController pushViewController:lvc animated:YES];
+                
+            }
+        }
+        
+    }];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+//lazy
+
+-(LKAlumbsViewModel *)alumbsViewModel
+{
+    if (_alumbsViewModel == nil) {
+        _alumbsViewModel = [[LKAlumbsViewModel alloc]init];
+    }
+    return _alumbsViewModel;
+}
+
+/*
+ #pragma mark - Navigation
+ 
+ // In a storyboard-based application, you will often want to do a little preparation before navigation
+ - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+ // Get the new view controller using [segue destinationViewController].
+ // Pass the selected object to the new view controller.
+ }
+ */
+
+@end

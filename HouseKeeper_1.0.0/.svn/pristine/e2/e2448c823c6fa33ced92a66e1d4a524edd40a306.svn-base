@@ -1,0 +1,113 @@
+//
+//  LKWorkRecordVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/16.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKWorkRecordVC.h"
+#import "LKCalendarView.h"
+#import "LKWorkRecordTitleView.h"
+#import "LKWorkRecordViewModel.h"
+
+@interface LKWorkRecordVC()
+@property (nonatomic, strong) LKCalendarView *calendarView;
+@property (nonatomic, strong) LKWorkRecordTitleView *titleView;
+@property (nonatomic, strong) NSDate *currentSelectDate;
+@property (nonatomic, strong) UIButton *rightBtn;
+@end
+
+@implementation LKWorkRecordVC
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.rightBtn = [self addRightNavButtonWithImage:[UIImage imageNamed:@"notes_icon_calender"] action:@selector(rightBtnClick)];
+    [self createNavTitleView];
+    [self createCalendarView];
+
+}
+- (void)createNavTitleView {
+    [self addTitleViewWithTitle:self.titleView];
+    self.titleView.currentSelectDate = [NSDate date];
+    @weakify(self);
+    self.titleView.selectDate = ^(NSDate *selectDate) {
+        @strongify(self);
+        DLog(@"%@",[self.calendarView.dateFormatter stringFromDate:selectDate]);
+        self.currentSelectDate = selectDate;
+    };
+}
+- (void)createCalendarView {
+    [self.view addSubview:self.calendarView];
+    [self.view bringSubviewToFront:self.calendarView];
+    @weakify(self);
+    self.calendarView.selectDate = ^(NSDate *selectedDate) {
+        @strongify(self);
+        DLog(@"%@",[self.calendarView.dateFormatter stringFromDate:selectedDate]);
+        self.currentSelectDate = selectedDate;
+        self.titleView.currentSelectDate = selectedDate;
+        [self hiddenCalendarView];
+    };
+}
+- (void)rightBtnClick {
+    self.rightBtn.enabled = NO;
+    [self performSelector:@selector(enableRightBtn) withObject:nil afterDelay:1];
+    if (self.calendarView.hidden == YES) {
+        [self showCalendarView];
+    }else {
+        [self hiddenCalendarView];
+    }
+}
+- (void)enableRightBtn {
+    self.rightBtn.enabled = YES;
+}
+#pragma mark - LKCalendar
+- (void)hiddenCalendarView {
+    [UIView animateWithDuration:1 animations:^{
+        self.calendarView.frame = CGRectMake(0, -kScreen_Height + kStatusBarHeight + kNavBarHeight, kScreen_Width,  kScreen_Height - kStatusBarHeight - kNavBarHeight);
+    } completion:^(BOOL finished) {
+        self.calendarView.hidden = YES;
+    }];
+}
+- (void)showCalendarView {
+    [self.calendarView.calendar selectDate:self.currentSelectDate scrollToDate:YES];
+    [UIView animateWithDuration:1 animations:^{
+        self.calendarView.frame = CGRectMake(0,0, kScreen_Width, kScreen_Height - kStatusBarHeight - kNavBarHeight);
+        self.calendarView.hidden = NO;
+    } completion:^(BOOL finished) {
+    }];
+}
+
+
+- (Class)tableCellClass {
+    return [LKWorkRecordCell class];
+}
+- (Class)dataSourceClass {
+    return [LKWorkRecordViewModel class];
+}
+#pragma mark - lazy
+- (LKCalendarView *)calendarView {
+    if (_calendarView == nil) {
+        _calendarView = [[LKCalendarView alloc] init];
+        _calendarView.frame = CGRectMake(0, -kScreen_Height + kStatusBarHeight + kNavBarHeight, kScreen_Width,  kScreen_Height - kStatusBarHeight - kNavBarHeight);
+        _calendarView.hidden = YES;
+    }
+    return _calendarView;
+}
+- (LKWorkRecordTitleView *)titleView {
+    if (_titleView == nil) {
+        _titleView = [[LKWorkRecordTitleView alloc] init];
+    }
+    return _titleView;
+}
+//- (UIButton *)rightBtn {
+//    if (_rightBtn == nil) {
+//        _rightBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+//        _rightBtn.frame = CGRectMake(0, 0, kNavBarHeight, kNavBarHeight);
+//        [_rightBtn setImage:[UIImage imageNamed:@"notes_icon_calender"] forState:UIControlStateNormal];
+//        [_rightBtn addTarget:self action:@selector(rightBtnClick) forControlEvents:UIControlEventTouchUpInside];
+//    }
+//    return _rightBtn;
+//}
+@end

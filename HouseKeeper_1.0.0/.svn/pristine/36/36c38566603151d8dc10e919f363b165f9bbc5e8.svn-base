@@ -1,0 +1,95 @@
+//
+//  LKAddPictureView.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAddPictureView.h"
+#import "LKAddPicturePlaceholderView.h"
+
+@interface LKAddPictureView ()
+@property (nonatomic, strong) LKAddPicturePlaceholderView *picturePlaceholderView;
+@property (nonatomic, strong) UIImageView *imageView;
+
+@end
+
+@implementation LKAddPictureView
+
+- (void)createUI {
+    [super createUI];
+    _pictureImageArray = [NSMutableArray array];
+    _pictureViewWidth = (kScreen_Width - 110 )/3.0f;
+    [self addSubview:self.picturePlaceholderView];
+    [self addSubview:self.imageView];
+    [self addSubview:self.deleteBtn];
+    
+    self.picturePlaceholderView.frame = CGRectMake(3, 5, self.picturePlaceholderView.placeholderViewWidth, self.picturePlaceholderView.placeholderViewWidth);
+    self.imageView.frame = CGRectMake(3, 5, self.picturePlaceholderView.placeholderViewWidth, self.picturePlaceholderView.placeholderViewWidth);
+    self.deleteBtn.frame = CGRectMake(self.pictureViewWidth - 18, 0, 20, 20);
+    self.deleteBtn.hidden = YES;
+}
+- (void)setIndex:(NSInteger)index {
+    _index = index;
+    self.picturePlaceholderView.index = index;
+}
+- (void)setSelectImage:(UIImage *)selectImage {
+    _selectImage = selectImage;
+    self.imageView.image = _selectImage;
+    if (selectImage == nil) {
+        self.deleteBtn.hidden = YES;
+        self.picturePlaceholderView.hidden = NO;
+    }else {
+        self.deleteBtn.hidden = NO;
+        self.picturePlaceholderView.hidden = YES;
+    }
+}
+/** action */
+- (void)deleteButtonClick {
+    if ([self.delegate respondsToSelector:@selector(LKAddPictureViewDelegateDelete:pictureView:)]) {
+        [self.delegate LKAddPictureViewDelegateDelete:self.index pictureView:self];
+    }
+}
+- (void)imageViewTap {
+    
+    if ([self.delegate respondsToSelector:@selector(LKAddPictureViewDelegateTap:pictureView:)]) {
+        [self.delegate LKAddPictureViewDelegateTap:self.index pictureView:self];
+    }
+}
+- (void)longPressGesturePress:(UILongPressGestureRecognizer *)longPress {
+    if (longPress.state == UIGestureRecognizerStateBegan ) {
+        if ([self.delegate respondsToSelector:@selector(LKAddPictureViewLongPress)]) {
+            [self.delegate LKAddPictureViewLongPress];
+        }
+    }
+}
+/** lazy */
+- (LKAddPicturePlaceholderView *)picturePlaceholderView {
+    if (_picturePlaceholderView == nil) {
+        _picturePlaceholderView = [[LKAddPicturePlaceholderView alloc] init];
+    }
+    return _picturePlaceholderView;
+}
+- (UIButton *)deleteBtn {
+    if (_deleteBtn == nil) {
+        _deleteBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_deleteBtn setBackgroundImage:[UIImage imageNamed:@"note_icon_close"] forState:UIControlStateNormal];
+        [_deleteBtn addTarget:self action:@selector(deleteButtonClick) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _deleteBtn;
+}
+- (UIImageView *)imageView {
+    if (_imageView == nil) {
+        _imageView = [[UIImageView alloc] init];
+        _imageView.userInteractionEnabled = YES;
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(imageViewTap)];
+        [_imageView addGestureRecognizer:tap];
+        UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressGesturePress:)];
+        longPress.minimumPressDuration = 2;
+        [_imageView addGestureRecognizer:longPress];
+    }
+    return _imageView;
+}
+
+@end

@@ -1,0 +1,228 @@
+//
+//  LKQualityHistoryVC.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityHistoryVC.h"
+#import "LKQualityHistoryViewModel.h"
+#import "LKQualityHistoryViewCell.h"
+#import "LKQualityDetailViewController.h"
+#import "LKQualityReportViewController.h"
+#import "LKQualityHistoryHeaderView.h"
+
+@interface LKQualityHistoryVC ()
+@property (nonatomic, strong) LKQualityHistoryViewModel *qualityHistoryViewModel;
+@property (nonatomic, strong) LKQualityHistoryHeaderView *headerView;
+@property (nonatomic, strong) NSDateFormatter *dataFormatter;
+
+/** 时间选择 */
+@property (nonatomic, strong) NSMutableArray *timeDataArray;
+@property (nonatomic, strong) NSMutableArray *yearArray;
+@property (nonatomic, strong) THPickerView *timePickerView;
+/** 格式 === 2018年8 */
+@property (nonatomic, copy)__block NSString *currentSelectTimeString;
+
+@end
+
+@implementation LKQualityHistoryVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self createUI];
+    [self bindViewModelData];
+    [self getTimeData];
+    
+}
+- (void)createUI {
+    [self setNavBarTitle:@"抽查记录"];
+    [self.view addSubview:self.headerView];
+    [self.headerView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.equalTo(self.view);
+        make.height.mas_equalTo(35);
+    }];
+    [self.mainTableView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.bottom.equalTo(self.view);
+        make.top.equalTo(self.headerView.mas_bottom);
+    }];
+    [self conFigTableLoadMoreData];
+    [self conFigTableRefresh];
+    @weakify(self);
+    self.headerView.selectTime = ^(NSString *selectTime) {
+        @strongify(self);
+        self.currentSelectTimeString = [selectTime stringByReplacingOccurrencesOfString:@"月" withString:@""];
+        [self showTimePickerView];
+    };
+}
+- (void)bindViewModelData {
+    @weakify(self);
+    [self.qualityHistoryViewModel.refreshLoadData subscribeNext:^(id x) {
+        //加载数据
+        @strongify(self)
+        self.qualityHistoryViewModel.requestUrl = LKSpotCheckCountHistorylist;
+        [self loadData:NO];
+    }];
+    [self.qualityHistoryViewModel.cellClickSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        if ([x isKindOfClass:[NSDictionary class]]) {
+            NSDictionary * dict =(NSDictionary *)x;
+            NSString * key = [dict stringForKey:@"key"];
+            if ([key isEqualToString:@"detail"]) {
+                LKQualityHistoryModel *historyModel = [dict objectForKey:@"data"];
+                LKQualityDetailViewController * vc =[[LKQualityDetailViewController alloc] init];
+                vc.historyModel = historyModel;
+                [self.navigationController pushViewController:vc animated:YES];
+            }else if ([key isEqualToString:@"look"]){
+                LKQualityHistoryModel *historyModel = [dict objectForKey:@"data"];
+                LKQualityReportViewController * vc = [[LKQualityReportViewController alloc]init];
+                vc.historyModel = historyModel;
+                [self.navigationController pushViewController:vc animated:YES];
+            }
+        }
+    }];
+    [self.qualityHistoryViewModel.loadDataFinishSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self)
+        BOOL hasData = [x boolValue];
+        self.mainTableView.scrollEnabled = hasData;
+        [self.view configBlankPage:EaseBlankPageTypeNoButton_checkRecode hasData:hasData hasError:NO reloadButtonBlock:^(id sender) {
+            
+        }];
+    }];
+}
+- (void)loadData:(BOOL)isRefresh {
+//    NSString *currentSelect = [self.currentSelectTimeString stringByReplacingOccurrencesOfString:@"年" withString:@"-"];
+//    self.qualityHistoryViewModel.requestDict = @{@"currentMonth":self.currentSelect,@"regionId":self.regionId,@"pageSize":@10,@"pageNo":@(self.dataSource.pageIndex),@"begin":@"0"};
+    NSString *pageIndex = [NSString stringWithFormat:@"%ld",self.dataSource.pageIndex];
+    if (isRefresh) {
+        pageIndex = @"1";
+    }
+    self.qualityHistoryViewModel.requestDict = @{@"currentMonth":@"2018-07",@"regionId":@"266",@"pageSize":@(self.dataSource.pageSize),@"pageNo":pageIndex,@"begin":@"0"};
+    
+}
+- (void)showTimePickerView {
+    if (_timePickerView == nil) {
+        NSInteger selectFirstRow = 0;
+        NSInteger selectSecondRow = 0;
+        if ([LKCustomTool isBlankString:self.currentSelectTimeString] == NO) {
+            NSArray *array = [self.currentSelectTimeString componentsSeparatedByString:@"年"];
+            if ([self.yearArray indexOfObject:[array objectAtIndex:0]] != NSNotFound) {
+                selectFirstRow = [self.yearArray indexOfObject:[array objectAtIndex:0]];
+            }
+            selectSecondRow = [[array objectAtIndex:1] integerValue] - 1;
+            if (selectSecondRow < 0 || selectSecondRow > 11) {
+                selectSecondRow = 0;
+            }
+        }
+        [self.timePickerView.pickerView selectRow:selectFirstRow inComponent:0 animated:NO];
+        [self.timePickerView.pickerView selectRow:selectSecondRow inComponent:1 animated:NO];
+        [self.timePickerView.pickerView reloadAllComponents];
+    }
+    [self.timePickerView showConfirmBlock:^(NSArray<NSString *> *indexArray) {
+        if (indexArray.count >=2) {
+            NSInteger firstComponents = [[indexArray objectAtIndex:0] integerValue];
+            NSInteger secondComponents = [[indexArray objectAtIndex:1] integerValue];
+            NSString *year = [[self.timeDataArray objectAtIndex:firstComponents] objectForKey:@"name"];
+            NSString *month = [[[[self.timeDataArray objectAtIndex:firstComponents] objectForKey:@"data"] objectAtIndex:secondComponents] objectForKey:@"name"];
+            self.currentSelectTimeString = [NSString stringWithFormat:@"%@年%@",year,month];
+            self.headerView.currentSelectTime = [NSString stringWithFormat:@"%@月",self.currentSelectTimeString];
+            [self loadData:YES];
+        }
+    }];
+    
+}
+- (void)getTimeData {
+    NSString *selectTime = [self.dataFormatter stringFromDate:[NSDate date]];
+    if ([LKCustomTool isBlankString:selectTime] == NO) {
+       selectTime = [selectTime stringByAppendingString:@"月"];
+    }
+    self.currentSelectTimeString = selectTime;
+    self.headerView.currentSelectTime = self.currentSelectTimeString;
+    self.yearArray = [self getYearArray];
+    
+    for (NSInteger i = 0; i < self.yearArray.count; i++ ) {
+        NSString *year = [self.yearArray objectAtIndex:i];
+        NSMutableDictionary *yearDict = [NSMutableDictionary dictionary];
+        [yearDict setObject:year forKey:@"name"];
+        NSMutableArray *monthArray = [NSMutableArray array];
+        for (NSInteger j = 1; j <= 12 ; j ++ ) {
+            NSMutableDictionary *minuteDict = [NSMutableDictionary dictionary];
+            [minuteDict setObject:[NSString stringWithFormat:@"%ld",(long)j] forKey:@"name"];
+            [monthArray addObject:minuteDict];
+        }
+        [yearDict setObject:monthArray forKey:@"data"];
+        [self.timeDataArray addObject:yearDict];
+    }
+}
+- (NSMutableArray *)getYearArray {
+    NSInteger startYear = 2018;
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSCalendarUnit unit = NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay|NSCalendarUnitHour|NSCalendarUnitSecond|NSCalendarUnitMinute;
+    NSDateComponents *components = [calendar components:unit fromDate:[NSDate date]];
+    NSMutableArray *yearArray = [NSMutableArray array];
+    NSInteger currentYear = components.year;
+    if (startYear == components.year) {
+        [yearArray addObject:[NSString stringWithFormat:@"%ld",startYear]];
+        return yearArray;
+    }else {
+        NSInteger count = labs(currentYear - startYear) + 1;
+        for (NSInteger i = 0; i < count; i ++) {
+            [yearArray addObject:[NSString stringWithFormat:@"%ld",startYear + i]];
+        }
+        return yearArray;
+    }
+}
+/**  */
+-(Class)tableCellClass
+{
+    return [LKQualityHistoryViewCell class];
+}
+
+- (LKBaseTableViewModel*)createDataSource
+{
+    return self.qualityHistoryViewModel;
+}
+//lazy
+-(LKQualityHistoryViewModel *)qualityHistoryViewModel
+{
+    if (_qualityHistoryViewModel == nil) {
+        _qualityHistoryViewModel = [[LKQualityHistoryViewModel alloc]init];
+    }
+    return _qualityHistoryViewModel;
+}
+- (LKQualityHistoryHeaderView *)headerView {
+    if (_headerView == nil) {
+        _headerView = [[LKQualityHistoryHeaderView alloc] init];
+    }
+    return _headerView;
+}
+- (NSDateFormatter *)dataFormatter {
+    if (_dataFormatter == nil) {
+        _dataFormatter = [[NSDateFormatter alloc] init];
+        [_dataFormatter setDateFormat:@"yyyy年M"];
+    }
+    return _dataFormatter;
+}
+- (NSMutableArray *)timeDataArray {
+    if (_timeDataArray == nil) {
+        _timeDataArray = [NSMutableArray array];
+    }
+    return _timeDataArray;
+}
+- (NSMutableArray *)yearArray {
+    if (_yearArray == nil) {
+        _yearArray = [NSMutableArray array];
+    }
+    return _yearArray;
+}
+- (THPickerView *)timePickerView {
+    if (_timePickerView == nil) {
+        _timePickerView = [[THPickerView alloc] initWithDataKey:@"data" AndDataArray:self.timeDataArray AndTestKey:@"name" AndNumberOfComponents:2];
+        _timePickerView.titleLabel.text = @"抽查日期";
+    }
+    return _timePickerView;
+}
+
+@end

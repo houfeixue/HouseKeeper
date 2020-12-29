@@ -1,0 +1,40 @@
+//
+//  LKAlumbsViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKAlumbsViewModel.h"
+
+@implementation LKAlumbsViewModel
+
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setUp];
+    }
+    return self;
+}
+-(void)setUp{
+    
+    [self.dataArray removeAllObjects];
+    NSArray *alumbArray = [[LKPictureDBManager shareManager]fetchAlumbData];
+    for (int i=0; i<alumbArray.count; i++) {
+        LKCollectionSectionObject * section = [[LKCollectionSectionObject alloc]init];
+        LKAlumbModel * model = [alumbArray objectAtIndex:i];
+        section.itemArray = [NSMutableArray arrayWithArray:[[LKPictureDBManager shareManager]fetchAllAlumbName:model.categoryId]] ;
+        [self.dataArray addObject:section];
+        
+    }
+    
+}
+
+#pragma mark table -delegate
+
+
+
+@end

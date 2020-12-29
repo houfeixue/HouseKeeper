@@ -1,0 +1,100 @@
+//
+//  LKPictureCell.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/13.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPictureCell.h"
+#import "LKPictureSelectModel.h"
+
+@implementation LKPictureCell
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self _setupViews];
+    }
+    return self;
+}
+
+- (void)_setupViews
+{
+    
+    self.backgroundColor = [UIColor redColor];
+    [self.contentView addSubview:self.picImageView];
+    [self.contentView addSubview:self.selectBtn];
+    [self.picImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.bottom.top.equalTo(self.contentView);
+        
+    }];
+    [self.selectBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.contentView).offset(-10);
+        make.top.equalTo(self.contentView).offset(10);
+        make.width.height.equalTo(@(22));
+    }];
+    
+    
+}
+
+-(void)conFigCellwithData:(id)data atIndex:(NSIndexPath *)indexPath
+{
+    if ([data isKindOfClass:[LKPictureModel class]]) {
+        LKPictureModel *model = (LKPictureModel *)data;
+        
+        
+        if (model.isSelect) {
+            [self.selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_selected"] forState:UIControlStateNormal];
+
+        }else{
+            
+             [self.selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_default"] forState:UIControlStateNormal];
+        }
+        
+        
+        NSString * imagePath = [NSString stringWithFormat:@"%@/%@.jpg",LKPicturePath,model.picName];
+//        [_picImageView sd_setImageWithURL:[NSURL URLWithString:imagePath] placeholderImage:nil];
+
+        _picImageView.image = [UIImage imageWithContentsOfFile:imagePath];
+        
+    }
+}
+
+//lazy
+-(UIImageView *)picImageView
+{
+    if (_picImageView == nil) {
+        _picImageView = [[UIImageView alloc]init];
+        _picImageView.backgroundColor = LKBlueColor;
+    }
+    return _picImageView;
+}
+
+-(UIButton *)selectBtn
+{
+    if (_selectBtn == nil) {
+        _selectBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_selectBtn setImage:[UIImage imageNamed:@"check_photo_icon_default"] forState:UIControlStateNormal];
+        
+        @weakify(self)
+//        [[[_selectBtn rac_signalForControlEvents:UIControlEventTouchUpInside]takeUntil:self.rac_prepareForReuseSignal]subscribeNext:^(id x) {
+//            @strongify(self);
+//            if (self.pictureSelectBtnClick) {
+//                self.pictureSelectBtnClick(@"");
+//            }
+//
+//        }];
+        
+        [[_selectBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+            @strongify(self);
+            if (self.pictureSelectBtnClick) {
+                self.pictureSelectBtnClick(@"");
+            }
+            
+        }];
+        
+    }
+    return _selectBtn;
+}
+
+@end

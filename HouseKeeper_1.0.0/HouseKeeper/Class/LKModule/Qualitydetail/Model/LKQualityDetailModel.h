@@ -1,0 +1,42 @@
+//
+//  LKQualityDetailModel.h
+//  HouseKeeper
+//
+//  Created by sunny on 2018/8/2.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+
+@class LKQualityDetailListModel,LKQualityDetailImageInfoModel;
+
+@interface LKQualityDetailModel : NSObject
+@property (nonatomic, strong) NSNumber *categoryId;
+@property (nonatomic, copy) NSString *categoryName;
+@property (nonatomic, strong) NSNumber *detailId;
+@property (nonatomic, strong) NSArray<LKQualityDetailListModel *> *items;
+@property (nonatomic, copy) NSString *iconUrl;
+@property (nonatomic, strong) NSNumber *recordId;
+@property (nonatomic, assign) double totalScore;
+@end
+
+
+@interface LKQualityDetailListModel : NSObject
+@property (nonatomic, strong) NSNumber *detailId;
+@property (nonatomic, strong) NSNumber *fullMark;
+@property (nonatomic, copy) NSString *itemsInfo;
+@property (nonatomic, copy) NSString *itemsName;
+@property (nonatomic, strong) NSNumber *recordId;
+@property (nonatomic, copy) NSString *ruleDesc;
+@property (nonatomic, copy) NSString *ruleInfo;
+@property (nonatomic, assign) double scort;
+@property (nonatomic, strong) NSArray<LKQualityDetailImageInfoModel *> *images;
+
+@end
+
+@interface LKQualityDetailImageInfoModel : NSObject
+@property (nonatomic, copy) NSString *desc;
+@property (nonatomic, copy) NSString *url;
+
+@end

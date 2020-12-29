@@ -1,0 +1,119 @@
+//
+//  LKPictureHandleVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/17.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPictureHandleVC.h"
+#import "LKMergeView.h"
+
+@interface LKPictureHandleVC ()<UITextViewDelegate>
+@property (nonatomic, strong) UIImageView *pictureImageView;
+@property (nonatomic, strong) UITapGestureRecognizer *tapGesture;
+
+/** 合同图片view */
+@property (nonatomic, strong) LKMergeView *mergeView;
+@property (nonatomic, strong) UIImage *currentSelectPictureImage;
+
+@property (nonatomic, strong) UITextView *inputTextView;
+
+
+@end
+
+@implementation LKPictureHandleVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self createUI];
+}
+- (void)createUI {
+    
+    UIButton *rightBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    rightBtn.backgroundColor = [UIColor redColor];
+    rightBtn.frame = CGRectMake(0, 0, 44, 44);
+    [rightBtn addTarget:self action:@selector(rightBtnClick) forControlEvents:UIControlEventTouchUpInside];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:rightBtn];
+    
+    
+    [self.view addSubview:self.pictureImageView];
+    [self.pictureImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.right.equalTo(self.view);
+        make.bottom.equalTo(self.view.mas_bottom).inset(150);
+    }];
+    self.pictureImageView.backgroundColor = [UIColor redColor];
+
+    [self.pictureImageView addGestureRecognizer:self.tapGesture];
+    [self createMergeView];
+    [self createTextView];
+
+}
+- (void)createMergeView{
+    [self.view addSubview:self.mergeView];
+
+    [self.mergeView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.view.mas_bottom).offset(2000);
+        make.left.right.equalTo(self.view);
+    }];
+    self.mergeView.tipLabel.text = @"阿萨德绿军奥奥所大所多多多所多多所多所多多所所多所大奥多所多所多所多所所大所多撒多多撒所多所大所多所多多所多";
+    self.mergeView.locationLabel.text = @"北京市朝阳区西大望路88号SOHO现代城";
+}
+- (void)createTextView {
+    [self.view addSubview:self.inputTextView];
+    [self.inputTextView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(LKLeftMargin);
+        make.right.equalTo(self.view.mas_right).inset(LKLeftMargin);
+        make.height.mas_equalTo(100);
+        make.top.equalTo(self.pictureImageView.mas_bottom).offset(30);
+    }];
+}
+- (void)takePhoto {
+//    @weakify(self);
+//    [[LKCameraTool sharedLKCameraTool] showPickerController:self pictureHandle:^(UIImage *image) {
+//        @strongify(self);
+//
+//    }];
+    self.currentSelectPictureImage = [UIImage imageNamed:@"456"];
+    self.pictureImageView.image = self.currentSelectPictureImage;
+}
+#pragma mark - btnClick
+/** 合成图片 */
+- (void)rightBtnClick {
+    self.mergeView.locationLabel.text = @"北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室--北京市朝阳区阳光财富大厦1105室";
+    self.mergeView.tipLabel.text = self.inputTextView.text;
+    [self.mergeView layoutIfNeeded];
+    [self.view layoutIfNeeded];
+    UIImage *mergeImage = [LKCustomTool makeImageWithView:self.mergeView withSize:self.mergeView.size];
+    self.pictureImageView.image = [LKCustomTool composeImageOnMainImage:self.currentSelectPictureImage mainImageViewFrame:self.pictureImageView.frame subImageArray:@[mergeImage] subImageFrameArray:@[NSStringFromCGRect(CGRectMake(0, self.pictureImageView.height - mergeImage.size.height, self.pictureImageView.width, mergeImage.size.height))]];
+}
+
+#pragma mark - lazy
+- (UIImageView *)pictureImageView {
+    if (_pictureImageView == nil) {
+        _pictureImageView = [[UIImageView alloc] init];
+        _pictureImageView.contentMode = UIViewContentModeScaleAspectFit;
+        _pictureImageView.userInteractionEnabled = YES;
+    }
+    return _pictureImageView;
+}
+- (UITapGestureRecognizer *)tapGesture {
+    if (_tapGesture == nil) {
+        _tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(takePhoto)];
+    }
+    return _tapGesture;
+}
+- (LKMergeView *)mergeView {
+    if (_mergeView == nil) {
+        _mergeView = [[LKMergeView alloc] init];
+    }
+    return _mergeView;
+}
+- (UITextView *)inputTextView {
+    if (_inputTextView == nil) {
+        _inputTextView = [[UITextView alloc] init];
+    }
+    return _inputTextView;
+}
+@end

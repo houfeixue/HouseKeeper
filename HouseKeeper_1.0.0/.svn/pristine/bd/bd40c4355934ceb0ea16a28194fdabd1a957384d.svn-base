@@ -1,0 +1,368 @@
+//
+//  LKRegisterPerfectInformationVC.m
+//  HouseKeeper
+//
+//  Created by sunny on 2018/7/19.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKRegisterPerfectInformationVC.h"
+#import "LKRegisterHeaderView.h"
+#import "LKRegisterItemView.h"
+#import "LKRegisterPerfectInformationViewModel.h"
+#import "LKSearchCommunityVC.h"
+#import "LKSearchCommunityListModel.h"
+#import "LKAuthorViewController.h"
+
+@interface LKRegisterPerfectInformationVC ()
+@property (nonatomic, strong) LKRegisterHeaderView *headerView;
+/** 管家姓名 */
+@property (nonatomic, strong) LKRegisterItemView *nameItemView;
+/** 身份证 */
+@property (nonatomic, strong) LKRegisterItemView *idCardItemView;
+/** 小区 */
+@property (nonatomic, strong) LKRegisterItemView *addressItemView;
+/** 管家身份 */
+@property (nonatomic, strong) LKRegisterItemView *identityItemView;
+/** 工号 */
+@property (nonatomic, strong) LKRegisterItemView *jobNumberItemView;
+
+@property (nonatomic, strong) UIButton *submitBtn;
+
+@property (nonatomic, strong) LKRegisterPerfectInformationViewModel *perfectInformationViewModel;
+
+@property (nonatomic, strong) UIScrollView *bgScrollView;
+/** 选择小区数组 */
+@property (nonatomic, strong) __block NSMutableArray *selectCommunityModelArray;
+
+
+/** 管家身份数据源 */
+@property (nonatomic, strong) __block NSMutableArray *houseKeeperArray;
+@property (nonatomic, strong) __block NSMutableArray *houseKeeperPickerDataArray;
+@property (nonatomic, strong) LKRegisterHouseKeeperIdentifyModel *currentSelectIdentifyModel;
+
+@end
+
+@implementation LKRegisterPerfectInformationVC
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self setNavigationBarWhiteBackground];
+    [self addBlackBackButton];
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    @weakify(self);
+    [[[NSNotificationCenter defaultCenter] rac_addObserverForName:@"searchResultSureSelectCommunity" object:nil] subscribeNext:^(NSNotification * _Nullable not) {
+        @strongify(self);
+        NSArray *selectArray = not.object;
+        self.selectCommunityModelArray = [NSMutableArray arrayWithArray:selectArray];
+        [self changeSelectCommunityTextField];
+    }];
+    
+    [self setNavigationBarWhiteBackground];
+    [self addNavBarTitleView];
+    [self createUI];
+    [self bindActionHandle];
+    
+    //下载管家身份信息
+    [self loadIdentityData];
+}
+//管家身份接口
+-(void)loadIdentityData{
+    
+    self.perfectInformationViewModel.requestUrl = LKRoleList;
+    self.perfectInformationViewModel.requestTag = 1;
+    self.perfectInformationViewModel.requestDict = @{};
+    [self.perfectInformationViewModel.loadRoleDataSubject subscribeNext:^(NSArray *  _Nullable houseKeeperIdentifyModelArray) {
+        self.houseKeeperArray = [NSMutableArray arrayWithArray:houseKeeperIdentifyModelArray];
+        self.houseKeeperPickerDataArray = [NSMutableArray array];
+        for (LKRegisterHouseKeeperIdentifyModel *model in self.houseKeeperArray) {
+            [self.houseKeeperPickerDataArray addObject:model.roleName];
+        }
+    }];
+    
+    
+}
+#pragma mark - Action
+- (void)bindActionHandle {
+    @weakify(self);
+    [[self.submitBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(id x) {
+        @strongify(self);
+        [self.view endEditing:YES];
+        if ([self.idCardItemView.textField.text isCorrectIDNumber] == NO) {
+            [LKCustomMethods showWindowMessage:@"请输入正确的身份证号"];
+            return ;
+        }
+        NSMutableDictionary *params = [NSMutableDictionary dictionary];
+        LKUserInfoModel *userInfoModel = [LKCustomMethods readUserInfo];
+        NSString *mobile = @"";
+        NSString *userId = @"";
+        if (userInfoModel != nil) {
+            mobile = userInfoModel.mobile ;
+            userId = [NSString stringWithFormat:@"%d",userInfoModel.userId];
+        }
+        [params setObject:mobile forKey:@"mobile"];
+        [params setObject:self.nameItemView.textField.text forKey:@"name"];
+        [params setObject:self.idCardItemView.textField.text forKey:@"idNumber"];
+        NSString *roleId = [NSString stringWithFormat:@"%d",self.currentSelectIdentifyModel.roleId];
+        [params setObject:roleId forKey:@"type"];
+        
+        NSString *customerCode = @"";
+        if ([LKCustomTool isBlankString:self.jobNumberItemView.textField.text] == NO) {
+            customerCode = self.jobNumberItemView.textField.text;
+        }
+        [params setObject:customerCode forKey:@"customerCode"];
+
+        NSMutableArray *communityArray = [NSMutableArray array];
+        for (LKSearchCommunityModel *model in self.selectCommunityModelArray) {
+            NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+            [dict setObject:userId forKey:@"customerId"];
+            [dict setObject:[NSString stringWithFormat:@"%d",model.communityId] forKey:@"communityId"];
+            [dict setObject:mobile forKey:@"customerTel"];
+            [dict setObject:roleId forKey:@"type"];
+            [communityArray addObject:dict];
+        }
+        [params setObject:communityArray forKey:@"communities"];
+        self.perfectInformationViewModel.requestUrl = LKAddAudit;
+        self.perfectInformationViewModel.requestTag = 2;
+        self.perfectInformationViewModel.requestDict = params;
+        
+    }];
+    /** 绑定按钮能否点击信号 */
+    RAC(self.submitBtn, enabled) = self.perfectInformationViewModel.enableNextSignal;
+    RAC(self.submitBtn, backgroundColor) = self.perfectInformationViewModel.nextBtnColorSignal;
+    
+    RAC(self.perfectInformationViewModel.perfectInformationModel, houseKeeperName) = self.nameItemView.textField.rac_textSignal;
+    RAC(self.perfectInformationViewModel.perfectInformationModel, idCard) = self.idCardItemView.textField.rac_textSignal;
+    RAC(self.perfectInformationViewModel.perfectInformationModel, address) = self.addressItemView.textField.rac_textSignal;
+    RAC(self.perfectInformationViewModel.perfectInformationModel, identify) = self.identityItemView.textField.rac_textSignal;
+    /** 选择小区 */
+    [[self.addressItemView.nextBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        @strongify(self);
+        [self.view endEditing:YES];
+        LKSearchCommunityVC *vc = [[LKSearchCommunityVC alloc] init];
+        vc.selectCommunityArray = [self.selectCommunityModelArray mutableCopy];
+        [self.navigationController pushViewController:vc animated:YES];
+        @weakify(self);
+        [vc.sureSelectSubject subscribeNext:^(NSMutableArray *  _Nullable selectCommunityArray) {
+            @strongify(self);
+            self.selectCommunityModelArray = [selectCommunityArray mutableCopy];
+            [self changeSelectCommunityTextField];
+        }];
+    }];
+    /** 选择管家身份 */
+    [[self.identityItemView.nextBtn rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) {
+        [self.view endEditing:YES];
+        THPickerView *pickerView = [[THPickerView alloc] initWithDataKey:@"datas" AndDataArray:self.houseKeeperPickerDataArray AndTestKey:@"test" AndNumberOfComponents:1];
+        pickerView.titleLabel.text = @"我的身份";
+        @weakify(self);
+        [pickerView showConfirmBlock:^(NSArray<NSString *> *indexArray) {
+            @strongify(self);
+            for (NSString *index in indexArray) {
+                LKRegisterHouseKeeperIdentifyModel *model = [self.houseKeeperArray objectAtIndex:[index integerValue]];
+                self.currentSelectIdentifyModel = model;
+                self.identityItemView.textField.text = model.roleName;
+                [self.identityItemView.textField sendActionsForControlEvents:UIControlEventEditingChanged];
+            }
+        }];
+    }];
+    [self netSingleHandle];
+}
+- (void)netSingleHandle {
+    @weakify(self);
+    [self.perfectInformationViewModel.auditSuccessSubject subscribeNext:^(id  _Nullable x) {
+        @strongify(self);
+        LKAuthorViewController *vc = [[LKAuthorViewController alloc] initAuthorType:@"1"];
+        [self.navigationController pushViewController:vc animated:YES];
+    }];
+}
+- (void)changeSelectCommunityTextField {
+    if (self.selectCommunityModelArray.count > 0) {
+        LKSearchCommunityModel *communityModel = [self.selectCommunityModelArray objectAtIndex:0];
+        if (self.selectCommunityModelArray.count == 1) {
+            self.addressItemView.textField.text = communityModel.name;
+        }else {
+            self.addressItemView.textField.text = [NSString stringWithFormat:@"%@等%ld个小区",communityModel.name,self.selectCommunityModelArray.count];
+        }
+    }else {
+        self.addressItemView.textField.text = @"";
+    }
+    [self.addressItemView.textField sendActionsForControlEvents:UIControlEventEditingChanged];
+}
+#pragma mark - UI
+- (void)createUI {
+    [self.view addSubview:self.bgScrollView];
+    [self.bgScrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    [self createHeaderView];
+    [self createItemView];
+    [self.bgScrollView addSubview:self.submitBtn];
+    [self.submitBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.jobNumberItemView.mas_bottom).offset(kAdaptiveValue(40));
+        make.left.mas_equalTo(kAdaptiveValue(15));
+        make.right.equalTo(self.bgScrollView.mas_right).inset(15);
+        make.height.mas_equalTo(kAdaptiveValue(49));
+        make.bottom.greaterThanOrEqualTo(self.bgScrollView.mas_bottom).inset(kAdaptiveValue(112));
+        
+    }];
+    self.submitBtn.layer.cornerRadius = 5.0f;
+    [self.view layoutIfNeeded];
+    CGFloat maxHeight = CGRectGetMaxY(self.submitBtn.frame);
+    if (maxHeight > kScreen_Height - kStatusBarHeight - kNavBarHeight ) {
+        self.bgScrollView.contentSize = CGSizeMake(kScreen_Width, maxHeight);
+    }else {
+        self.bgScrollView.contentSize = CGSizeMake(kScreen_Width, kScreen_Height - kStatusBarHeight - kNavBarHeight + 1);
+    }
+}
+- (void)createHeaderView {
+    [self.bgScrollView addSubview:self.headerView];
+    [self.headerView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.mas_equalTo(0);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.width.mas_equalTo(kScreen_Width);
+    }];
+    self.headerView.titleNameDescLabel.text = @"就快完成了哦，一定要将信息输入正确";
+}
+- (void)createItemView {
+    [self.bgScrollView addSubview:self.nameItemView];
+    [self.nameItemView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.equalTo(self.headerView.mas_bottom).offset(kAdaptiveValue(100));
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.height.mas_equalTo(kAdaptiveValue(43));
+        make.width.mas_equalTo(kScreen_Width);
+    }];
+    LKUserInfoModel *userInfoModel = [LKCustomMethods readUserInfo];
+    NSString *name = @"";
+    if (userInfoModel != nil && [LKCustomTool isBlankString:userInfoModel.name] == NO) {
+        name = userInfoModel.name;
+    }
+    [self.nameItemView bindDataWithIconImage:@"app_icon_name" placeholder:@"管家姓名" textFieldText:name textFieldCanEdit:YES isShowNextBtn:NO];
+    [self.bgScrollView addSubview:self.idCardItemView];
+    [self.idCardItemView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.equalTo(self.nameItemView.mas_bottom);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.height.mas_equalTo(kAdaptiveValue(43));
+        make.width.mas_equalTo(kScreen_Width);
+    }];
+    [self.idCardItemView bindDataWithIconImage:@"app_icon_id" placeholder:@"身份证号" textFieldText:@"" textFieldCanEdit:YES isShowNextBtn:NO];
+
+    [self.bgScrollView addSubview:self.addressItemView];
+    [self.addressItemView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.equalTo(self.idCardItemView.mas_bottom);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.height.mas_equalTo(kAdaptiveValue(43));
+        make.width.mas_equalTo(kScreen_Width);
+    }];
+    [self.addressItemView bindDataWithIconImage:@"app_icon_address" placeholder:@"所在小区" textFieldText:@"" textFieldCanEdit:NO isShowNextBtn:YES];
+    
+    [self.bgScrollView addSubview:self.identityItemView];
+    [self.identityItemView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.equalTo(self.addressItemView.mas_bottom);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.height.mas_equalTo(kAdaptiveValue(43));
+        make.width.mas_equalTo(kScreen_Width);
+    }];
+    [self.identityItemView bindDataWithIconImage:@"app_icon_work" placeholder:@"管家身份" textFieldText:@"" textFieldCanEdit:NO isShowNextBtn:YES];
+    
+    [self.bgScrollView addSubview:self.jobNumberItemView];
+    [self.jobNumberItemView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(0);
+        make.top.equalTo(self.identityItemView.mas_bottom);
+        make.right.equalTo(self.bgScrollView.mas_right);
+        make.height.mas_equalTo(kAdaptiveValue(43));
+        make.width.mas_equalTo(kScreen_Width);
+    }];
+    [self.jobNumberItemView bindDataWithIconImage:@"app_icon_workNumber" placeholder:@"工号（选填）" textFieldText:@"" textFieldCanEdit:YES isShowNextBtn:NO];
+}
+
+- (void)addNavBarTitleView {
+    UIImageView *titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"register_2"]];
+    self.navigationItem.titleView = titleView;
+}
+- (void)backAction:(id)sender {
+    
+    [Dialog showCustomAlertViewWithTitle:@"" message:@"您的手机号已注册成功，是否放弃认证申请?" firstButtonName:@"是" secondButtonName:@"否" dismissHandler:^(NSInteger index) {
+        if (index == 0) {
+            [super backAction:sender];
+        }
+    }];
+}
+#pragma mark - lazy
+- (UIScrollView *)bgScrollView {
+    if (_bgScrollView == nil) {
+        _bgScrollView = [[UIScrollView alloc] init];
+    }
+    return _bgScrollView;
+}
+- (LKRegisterHeaderView *)headerView {
+    if (_headerView == nil) {
+        _headerView = [[LKRegisterHeaderView alloc] init];
+    }
+    return _headerView;
+}
+- (LKRegisterItemView *)nameItemView {
+    if (_nameItemView == nil) {
+        _nameItemView = [[LKRegisterItemView alloc] init];
+    }
+    return _nameItemView;
+}
+- (LKRegisterItemView *)idCardItemView {
+    if (_idCardItemView == nil) {
+        _idCardItemView = [[LKRegisterItemView alloc] init];
+    }
+    return _idCardItemView;
+}
+- (LKRegisterItemView *)addressItemView {
+    if (_addressItemView == nil) {
+        _addressItemView = [[LKRegisterItemView alloc] init];
+    }
+    return _addressItemView;
+}
+- (LKRegisterItemView *)identityItemView {
+    if (_identityItemView == nil) {
+        _identityItemView = [[LKRegisterItemView alloc] init];
+    }
+    return _identityItemView;
+}
+- (LKRegisterItemView *)jobNumberItemView {
+    if (_jobNumberItemView == nil) {
+        _jobNumberItemView = [[LKRegisterItemView alloc] init];
+    }
+    return _jobNumberItemView;
+}
+- (UIButton *)submitBtn {
+    if (_submitBtn == nil) {
+        _submitBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_submitBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [_submitBtn setTitle:@"提交审核" forState:UIControlStateNormal];
+        _submitBtn.backgroundColor = LKBlackColor;
+        _submitBtn.titleLabel.font = LK_18font;
+    }
+    return _submitBtn;
+}
+- (LKRegisterPerfectInformationViewModel *)perfectInformationViewModel {
+    if (_perfectInformationViewModel == nil) {
+        _perfectInformationViewModel = [[LKRegisterPerfectInformationViewModel alloc] init];
+    }
+    return _perfectInformationViewModel;
+}
+- (NSMutableArray *)selectCommunityModelArray {
+    if (_selectCommunityModelArray == nil) {
+        _selectCommunityModelArray = [NSMutableArray array];
+    }
+    return _selectCommunityModelArray;
+}
+- (NSMutableArray *)houseKeeperArray {
+    if (_houseKeeperArray == nil) {
+        _houseKeeperArray = [NSMutableArray array];
+    }
+    return _houseKeeperArray;
+}
+@end

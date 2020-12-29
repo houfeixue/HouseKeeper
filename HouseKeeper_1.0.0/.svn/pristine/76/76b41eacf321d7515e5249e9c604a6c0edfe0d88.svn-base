@@ -1,0 +1,211 @@
+//
+//  LKQualityListSectionHeaderView.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/16.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityListSectionHeaderView.h"
+
+@implementation LKQualityListSectionHeaderView
+
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+-(instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self _setupView];
+    }
+    return self;
+}
+
+-(void)_setupView
+{
+    self.backgroundColor = [UIColor whiteColor];
+    [self addSubview:self.picImageView];
+    [self addSubview:self.nameLabel];
+    [self addSubview:self.scoreLabel];
+    [self addSubview:self.detailLabel];
+    [self addSubview:self.isFoldBtn];
+    [self addSubview:self.lookBtn];
+    [self addSubview:self.uploadBtn];
+    
+    [self.picImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.width.height.equalTo(@(20));
+        make.top.equalTo(self).offset(10);
+    }];
+    
+    [self.scoreLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self).offset(LKRightMargin);
+        make.top.equalTo(self).offset(10);
+        make.width.equalTo(@(50));
+        make.height.equalTo(@(20));
+    }];
+
+    [self.nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.scoreLabel.mas_left).offset(-5);
+        make.top.equalTo(self).offset(10);
+        make.left.equalTo(self.picImageView.mas_right).offset(5);
+        make.height.equalTo(@(20));
+    }];
+    
+    [self.isFoldBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self).offset(LKRightMargin);
+        make.top.equalTo(self.nameLabel.mas_bottom).offset(20);
+        make.width.equalTo(@(60));
+        make.height.equalTo(@(30));
+    }];
+
+    [self.detailLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.nameLabel.mas_bottom).offset(20);
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.right.equalTo(self.isFoldBtn.mas_left).offset(0);
+        make.height.equalTo(@(20));
+
+    }];
+
+    [self.lookBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self).offset(LKLeftMargin);
+        make.top.equalTo(self.isFoldBtn.mas_bottom).offset(20);
+        make.width.equalTo(@(kScreen_Width/2));
+        make.height.equalTo(@(40));
+    }];
+    
+    [self.lookBtn borderForColor:LKF7Color borderWidth:1 borderType:UIBorderSideTypeTop|UIBorderSideTypeRight];
+
+    [self.uploadBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self);
+        make.top.equalTo(self.isFoldBtn.mas_bottom).offset(20);
+        make.width.equalTo(@(kScreen_Width/2));
+        make.height.equalTo(@(40));
+    }];
+    [self.uploadBtn borderForColor:LKF7Color borderWidth:1 borderType:UIBorderSideTypeTop];
+
+}
+
+//lazy
+-(UIImageView *)picImageView
+{
+    if (_picImageView == nil) {
+        _picImageView = [[UIImageView alloc]init];
+//        _picImageView.image = [UIImage imageNamed:@"check_icon_car"];
+    }
+    return _picImageView;
+}
+-(UILabel *)nameLabel{
+    if (_nameLabel == nil) {
+        _nameLabel = [[UILabel alloc]init];
+        _nameLabel.text = @"客服基础服务";
+        _nameLabel.font = LK_medium_18font;//[UIFont fontWithName:@"PingFangSC-Medium" size:18];
+        _nameLabel.textColor = LKBlackColor;
+
+
+    }
+    return _nameLabel;
+}
+-(UILabel *)detailLabel
+{
+    if (_detailLabel == nil) {
+        _detailLabel = [[UILabel alloc]init];
+        _detailLabel.font = LK_14font;
+        _detailLabel.textColor = LK99Color;
+        _detailLabel.text = @" 张待传";
+
+    }
+    return _detailLabel;
+}
+-(UILabel *)scoreLabel
+{
+    if (_scoreLabel == nil) {
+        _scoreLabel = [[UILabel alloc]init];
+        _scoreLabel.text = @"16分";
+        _scoreLabel.font = LK_medium_16font;[UIFont fontWithName:@"PingFangSC-Medium" size:16];
+        _scoreLabel.textColor = LKBlackColor;
+        _scoreLabel.textAlignment = NSTextAlignmentRight;
+    }
+    return _scoreLabel;
+}
+
+-(UIButton *)isFoldBtn{
+    if(_isFoldBtn == nil ){
+        _isFoldBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_isFoldBtn setTitle:@"展开" forState:UIControlStateNormal];
+        [_isFoldBtn setImage:[UIImage imageNamed:@"app_icon_drop-down"] forState:UIControlStateNormal];
+        [_isFoldBtn setTitleEdgeInsets:UIEdgeInsetsMake(0, 0, 0, 20) withImageEdgeInsets:UIEdgeInsetsMake(0, 50, 0, 0)];
+        [_isFoldBtn setTitleColor:[UIColor colorWithRed:82/255.0 green:113/255.0 blue:141/255.0 alpha:1/1.0] forState:UIControlStateNormal];
+        _isFoldBtn.titleLabel.font = LK_14font;
+        @weakify(self)
+        [[_isFoldBtn rac_signalForControlEvents:UIControlEventTouchUpInside]subscribeNext:^(id x) {
+            @strongify(self);
+            if (self.qualityBtnClick) {
+                self.qualityBtnClick(@"isFold");
+            }
+        }];
+    }
+    return _isFoldBtn;
+}
+
+-(UIButton *)lookBtn
+{
+    if(_lookBtn == nil ){
+        _lookBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_lookBtn setTitle:@"查看照片" forState:UIControlStateNormal];
+        [_lookBtn setTitleColor:LKBlueColor forState:UIControlStateNormal];
+        _lookBtn.titleLabel.font = LK_14font;
+        
+        @weakify(self)
+        [[_lookBtn rac_signalForControlEvents:UIControlEventTouchUpInside]subscribeNext:^(id x) {
+            @strongify(self);
+            if (self.qualityBtnClick) {
+                self.qualityBtnClick(@"look");
+            }
+        }];
+    }
+    return _lookBtn;
+}
+-(UIButton *)uploadBtn
+{
+    if(_uploadBtn == nil ){
+        _uploadBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_uploadBtn setTitle:@"上传照片" forState:UIControlStateNormal];
+        [_uploadBtn setTitleColor:LKBlueColor forState:UIControlStateNormal];
+        _uploadBtn.titleLabel.font = LK_14font;
+        @weakify(self)
+        [[_uploadBtn rac_signalForControlEvents:UIControlEventTouchUpInside]subscribeNext:^(id x) {
+            @strongify(self);
+            if (self.qualityBtnClick) {
+                self.qualityBtnClick(@"upload");
+            }
+        }];
+    }
+    return _uploadBtn;
+}
+
+-(void)setViewUIWithModel:(LKQualityListModel*)model
+{
+    
+    _nameLabel.text = model.ruleInfo;
+    _scoreLabel.text = [NSString stringWithFormat:@"%@分",model.fullMark];
+    NSURL * imageUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@",LKIconHost,model.iconUrl]];
+    [_picImageView sd_setImageWithURL:imageUrl completed:^(UIImage * _Nullable image, NSError * _Nullable error, SDImageCacheType cacheType, NSURL * _Nullable imageURL) {
+    }];
+    if (model.isShow) {
+        [_isFoldBtn setTitle:@"收起" forState:UIControlStateNormal];
+        [_isFoldBtn setImage:[UIImage imageNamed:@"check_icon_down_blue"]forState:UIControlStateNormal];
+    }else{
+        
+        [_isFoldBtn setTitle:@"展开" forState:UIControlStateNormal];
+        [_isFoldBtn setImage:[UIImage imageNamed:@"app_icon_drop-down"]forState:UIControlStateNormal];
+    }
+
+}
+@end

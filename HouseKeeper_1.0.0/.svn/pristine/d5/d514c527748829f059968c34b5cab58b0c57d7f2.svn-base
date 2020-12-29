@@ -1,0 +1,97 @@
+//
+//  LKMyViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/11.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKMyViewModel.h"
+#import "LKMyHeadserCell.h"
+
+@implementation LKMyViewModel
+{
+    NSArray * dataDict;
+}
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self requestData];
+    }
+    return self;
+}
+
+
+-(void)requestData{
+ 
+    
+   dataDict= @[
+                              @{@"pic":@"personal center_icon_notes",
+                                @"title":@"抽查记录"
+                                },
+                              @{@"pic":@"personal center_icon_password",
+                                @"title":@"登录密码修改"
+                                },
+                              @{@"pic":@"personal center_icon_update",
+                                @"title":@"当前版本"
+                                },
+                              @{@"pic":@"personal center_icon_sign out",
+                                @"title":@"退出登录"
+                                }
+                              ];
+    
+}
+
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 1;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return 4;
+}
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 50;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString * cellID = @"LKMyHeadserCell";
+    LKMyHeadserCell * cell = [tableView dequeueReusableCellWithIdentifier:cellID];
+    if (cell == nil) {
+        cell = [[LKMyHeadserCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
+    }
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+    [cell fillCellWithDictionary:dataDict[indexPath.row]];
+    if (indexPath.row<2 ) {
+        cell.rightImageView.hidden = NO;
+        cell.versionImageView.hidden = YES;
+        cell.rightLable.hidden = YES;
+    }else{
+        
+        if (indexPath.row == 2) {
+            cell.versionImageView.hidden = NO;
+            cell.rightLable.hidden = NO;
+            NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+            // app版本
+            NSString *app_Version = [infoDictionary objectForKey:@"CFBundleShortVersionString"];
+            cell.rightLable.text = [NSString stringWithFormat:@"V%@",app_Version] ;
+        }else{
+           cell.versionImageView.hidden = YES;
+            cell.rightLable.hidden = YES;
+        }
+        cell.rightImageView.hidden = YES;
+    }
+    cell.lineView.backgroundColor = [UIColor lightGrayColor];
+    return cell;
+    
+}
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if (indexPath.row !=2) {
+        self.myCellBlock(indexPath);
+    }
+}
+
+@end

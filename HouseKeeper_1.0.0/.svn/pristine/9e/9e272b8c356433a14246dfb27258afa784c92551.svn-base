@@ -1,0 +1,159 @@
+//
+//  LKQualityDetailViewController.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/18.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKQualityDetailViewController.h"
+#import "LKQualityDetailViewModel.h"
+#import "LKQualityDetailViewCell.h"
+#import "LKQualityDetailViewController.h"
+#import "LKQualityDetailHeaderView.h"
+#import "LKSelectListView.h"
+#import "LKScoreBottomView.h"
+#import "LKQualityReportViewController.h"
+#import "LKLookPictureViewController.h"
+#import "LKQualityDetailModel.h"
+#import "LKQualityHistoryModel.h"
+
+@interface LKQualityDetailViewController ()
+
+@property (nonatomic, strong) LKQualityDetailViewModel *qualityDetailViewModel;
+
+@property (nonatomic, strong) LKQualityDetailHeaderView *qualityDetailHeaderView;
+@property (nonatomic, strong) LKSelectListView *selectListView;
+/** 筛选列表数据源 */
+@property (nonatomic, strong) NSMutableArray *selectListDataArray;
+
+@property (nonatomic, strong) LKScoreBottomView *scoreBottomView;
+
+/** 筛选类型第几个 */
+@property (nonatomic, assign)__block NSInteger currentSelectHeaderType;
+
+@end
+
+@implementation LKQualityDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    self.currentSelectHeaderType = 0;
+    [self setNavBarTitle:@"抽查明细"];
+    [self addRightNavButtonWithTitle:@"抽查报告" action:@selector(rightNavBtnCLick)];
+
+    [self conFigUI];
+    @weakify(self);
+    [self.qualityDetailViewModel.refreshUI subscribeNext:^(NSArray * _Nullable sourceDataArray) {
+        //加载数据
+        @strongify(self);
+        LKQualityDetailModel *model = [sourceDataArray objectAtIndex:self.currentSelectHeaderType];
+        [self .qualityDetailHeaderView bindDataIconImage:model.iconUrl titleName:model.categoryName score:model.totalScore];
+        [self.mainTableView reloadData];
+    }];
+    [self loadData];
+    [self bindBottomData];
+}
+- (void)loadData {
+    self.qualityDetailViewModel.requestUrl = LKSpotCheckCountDetail;
+//    if (self.historyModel != nil && self.historyModel.recordId ) {
+//        self.qualityDetailViewModel.requestDict = @{@"recordId":self.historyModel.recordId};
+//    }
+    self.qualityDetailViewModel.requestDict = @{@"recordId":@"16"};
+}
+-(void)conFigUI{
+    [self.view addSubview:self.qualityDetailHeaderView];
+    [self.view addSubview:self.scoreBottomView];
+    [self.scoreBottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.view);
+        make.height.equalTo(@(50));
+        if (LK_IS_IOS_11) {
+            make.bottom.equalTo(self.view.mas_safeAreaLayoutGuide);
+        }else{
+            make.bottom.equalTo(self.view.mas_bottom);
+        }
+    }];
+    [self.mainTableView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.view);
+        make.top.equalTo(self.qualityDetailHeaderView.mas_bottom);
+        make.bottom.equalTo(self.scoreBottomView.mas_top);
+    }];
+}
+- (void)bindBottomData {
+    if (self.historyModel != nil) {
+        [self.scoreBottomView bindDataWithScore:self.historyModel.scort identify:self.historyModel.identityName name:self.historyModel.realName];
+
+    }
+}
+- (void)rightNavBtnCLick {
+    LKQualityReportViewController *lvc =[[LKQualityReportViewController alloc]init];
+    [self.navigationController pushViewController:lvc animated:YES];
+}
+
+/**  */
+-(Class)tableCellClass
+{
+    return [LKQualityDetailViewCell class];
+}
+
+- (LKBaseTableViewModel*)createDataSource
+{
+    return self.qualityDetailViewModel;
+}
+//lazy
+-(LKQualityDetailViewModel *)qualityDetailViewModel{
+    if (_qualityDetailViewModel == nil) {
+        _qualityDetailViewModel = [[LKQualityDetailViewModel alloc]init];
+        
+    }
+    return _qualityDetailViewModel;
+}
+-(LKSelectListView *)selectListView
+{
+    if (_selectListView == nil) {
+        _selectListView = [[LKSelectListView alloc]init];
+        WS(weakSelf)
+        _selectListView.selectListClick = ^(LKCommityModel * model) {
+            [weakSelf.selectListView removeFromSuperview];
+        };
+    }
+    return _selectListView;
+}
+-(LKQualityDetailHeaderView *)qualityDetailHeaderView
+{
+    if (_qualityDetailHeaderView == nil) {
+        _qualityDetailHeaderView = [[LKQualityDetailHeaderView alloc]initWithFrame:CGRectMake(0, 0, kScreen_Width, 54)];
+        WS(weakSelf)
+        _qualityDetailHeaderView.qualityDetailHeaderClick = ^(NSString *status) {
+            [weakSelf.view addSubview:weakSelf.selectListView];
+            [weakSelf.selectListView mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.left.right.bottom.equalTo(weakSelf.view);
+                make.top.equalTo(weakSelf.qualityDetailHeaderView.mas_bottom);
+            }];
+        };
+    }
+    return _qualityDetailHeaderView;
+}
+
+
+-(LKScoreBottomView *)scoreBottomView{
+    
+    if (_scoreBottomView == nil) {
+        _scoreBottomView = [[LKScoreBottomView alloc]init];
+        WS(weakSelf)
+        _scoreBottomView.pictureLookClick = ^(NSString *status) {
+            LKLookPictureViewController * vc =[[LKLookPictureViewController alloc]init];
+            [weakSelf.navigationController pushViewController:vc animated:YES];
+        };
+    }
+    return _scoreBottomView;
+    
+}
+- (NSMutableArray *)selectListDataArray {
+    if (_selectListDataArray == nil) {
+        _selectListDataArray = [NSMutableArray array];
+    }
+    return _selectListDataArray;
+}
+@end

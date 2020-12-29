@@ -1,0 +1,137 @@
+//
+//  LKPicturesViewModel.m
+//  HouseKeeper
+//
+//  Created by heshenghui on 2018/7/25.
+//  Copyright © 2018年 heshenghui. All rights reserved.
+//
+
+#import "LKPicturesViewModel.h"
+#import "LKPictureCell.h"
+#import "LKPictureModel.h"
+#import "LKPicturesSectionHeaderReusableView.h"
+@implementation LKPicturesViewModel
+
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self setUp];
+    }
+    return self;
+}
+
+-(void)setUp{
+    
+    
+    @weakify(self)
+    [[RACObserve(self,categoryId)ignore:nil] subscribeNext:^(NSDictionary * requestDict) {
+        @strongify(self)
+        [self.dataArray removeAllObjects];
+        LKCollectionSectionObject *  section = [[LKCollectionSectionObject alloc]init];
+        section.itemArray  =  [NSMutableArray arrayWithArray:[[LKPictureDBManager shareManager]fetchAllAlumbName:self.categoryId]];
+        //todo 处理数据
+        [self.dataArray addObject:section];
+        [self.cellClickSubject sendNext:@"MainCollectReload"];
+        
+        
+    }];
+    
+    
+//    [[RACObserve(self,isSelectAll)skip:1]subscribeNext:^(id  _Nullable x) {
+//        @strongify(self)
+//        
+//        NSLog(@"%d",self.isSelectAll);
+//        LKCollectionSectionObject * sectionObject = [self.dataArray objectAtIndex:0];
+//        for (int i=0; i<sectionObject.itemArray.count; i++) {
+//            LKPictureSelectModel * model = [sectionObject.itemArray objectAtIndex:i];
+//            model.isSelect = self.isSelectAll;
+//        }
+//        [self.cellClickSubject sendNext:@"MainCollectReload"];
+//        
+//    }];
+    
+    
+    //    //cell的点击
+    //    [self.tableDidSelectSubject subscribeNext:^(NSIndexPath * index) {
+    //        NSInteger  d = index.row;
+    //        NSLog(@"tableDidSelectSubject : %d ",d);
+    //    }];
+    
+    
+    
+    
+}
+
+
+//#pragma collect delegate
+
+- (__kindof UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+    LKPictureCell * cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"LKPictureCell" forIndexPath:indexPath];
+    
+    LKCollectionSectionObject * sectionObject = [self.dataArray objectAtIndex:indexPath.section];
+    LKPictureModel * model = [sectionObject.itemArray objectAtIndex:indexPath.row];
+    cell.selectBtn.hidden = YES;
+    [cell conFigCellwithData:model atIndex:indexPath];
+    WS(weakSelf)
+    cell.pictureSelectBtnClick = ^(NSString * _Nonnull status) {
+        
+        model.isSelect = !model.isSelect;
+        [sectionObject.itemArray replaceObjectAtIndex:indexPath.row withObject:model];
+        
+        [weakSelf.cellClickSubject sendNext:@"MainCollectReload"];
+        
+    };
+    
+    return cell;
+    
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    CGFloat width = ((kScreen_Width) - 2*6) / 3;
+    
+    return CGSizeMake(width, width);
+    
+}
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    if ([kind isEqualToString:UICollectionElementKindSectionHeader]) {
+        LKPicturesSectionHeaderReusableView * headerView =[collectionView dequeueReusableSupplementaryViewOfKind:
+                                               UICollectionElementKindSectionHeader withReuseIdentifier:@"LKPicturesSectionHeaderReusableView" forIndexPath:indexPath];
+        
+        return headerView;
+    }
+    
+    return nil;
+}
+// 设置间距，不设置默认间距比较大，导致一行放不了三个cell
+
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)section{
+    
+    return 6;
+    
+}
+
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)section{
+    
+    return 0;
+    
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    DLog(@"%ld --%ld",indexPath.row ,indexPath.section);
+    
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didEndDisplayingCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    [self.cellClickSubject sendNext:indexPath];
+    
+}
+
+@end
